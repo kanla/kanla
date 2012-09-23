@@ -1,0 +1,133 @@
+#!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab
+
+use strict;
+use warnings;
+use v5.10;
+# libanyevent-xmpp-perl
+use AnyEvent::XMPP::Client;
+# libanyevent-perl
+use AnyEvent;
+use AnyEvent::Util;
+use AnyEvent::Handle;
+# libjson-xs-perl
+use JSON::XS;
+# core
+use Carp;
+use Data::Dumper;
+use File::Basename qw(basename);
+
+# TODO: config + multi-account support
+
+my @destination_accounts = qw(
+    michael@stapelberg.de
+);
+
+# Messages which were produced while no XMPP connection was established (yet).
+# They will be sent when a connection is established.
+my @queued_messages;
+
+my $xmpp = AnyEvent::XMPP::Client->new();
+$xmpp->add_account('zkj-monitor@jabber.ccc.de', 'geheim');
+$xmpp->reg_cb(
+	connected => sub {
+        my ($self, $account) = @_;
+        say "connected, adding contacts";
+        for my $jid (@destination_accounts) {
+            $account->connection()->get_roster()->new_contact($jid, undef, undef,
+                sub {
+                    my ($contact, $err) = @_;
+                    if (defined($contact)) {
+                        say "Added $jid, sending presence subscription";
+                        $contact->send_subscribe();
+                    } else {
+                        say "Error adding $jid: $err";
+                    }
+                });
+        }
+
+        for my $msg (@queued_messages) {
+            for my $dest (@destination_accounts) {
+                $xmpp->send_message($msg, $dest, undef, 'chat');
+            }
+        }
+    },
+    contact_request_subscribe => sub {
+        my ($cl, $acc, $roster, $contact) = @_;
+        # Ignore subscription requests from people who are not in
+        # @destination_accounts.
+        return unless ($contact->jid ~~ @destination_accounts);
+
+        # Acknowledge everything else.
+        say "Acknowledging subscription request from " . $contact->jid;
+        $contact->send_subscribed;
+        $contact->send_subscribe;
+    },
+    error => sub {
+        my ($self, $account, $error) = @_;
+        say "Error: " . $error->string();
+
+        # Try to reconnect, if necessary.
+        $xmpp->update_connections();
+    },
+);
+$xmpp->start;
+
+sub handle_stderr_msg {
+    my ($module, $data) = @_;
+    if (!exists($data->{severity}) ||
+        !exists($data->{message})) {
+        say STDERR "Malformed JSON output from module $module (missing severity or messages property).";
+        return;
+    }
+
+    if ($data->{severity} eq 'critical') {
+        say "relaying: " . $data->{message};
+        if (!defined($xmpp->find_account_for_dest_jid($destination_accounts[0]))) {
+            push @queued_messages, $data->{message};
+            return;
+        }
+        for my $dest (@destination_accounts) {
+            $xmpp->send_message($data->{message}, $dest, undef, 'chat');
+        }
+    }
+}
+
+# Now start all the monitoring modules, read their stderr and relay that errors
+# to XMPP.
+for my $module (<modules/*>) {
+    if (! -e $module) {
+        say STDERR "Skipping non-executable module $module";
+        next;
+    }
+
+    my ($pr, $pw) = AnyEvent::Util::portable_pipe;
+    fcntl($pr, AnyEvent::F_SETFD, AnyEvent::FD_CLOEXEC);
+    my $w;
+    $w = AnyEvent::Handle->new(
+        fh => $pr,
+        on_error => sub {
+            my ($hdl, $fatal, $msg) = @_;
+            say "Error reading from child proc: $msg";
+# TODO: restart the module so that one can just kill a module to make it pick
+# up code changes. use a timeout of 2 seconds so that you don’t get spammed
+# with failure messages in case your module exit 1;s.
+            $w->destroy;
+        });
+
+    my @start_request; @start_request = (json => sub {
+        my ($hdl, $hashref) = @_;
+        handle_stderr_msg(basename($module), $hashref);
+        $hdl->push_read(@start_request);
+    });
+
+    $w->push_read(@start_request);
+
+    my $cv = run_cmd [ $module ],
+        # stdout goes to /dev/null for now.
+        '>', '/dev/null',
+        '2>', $pw;
+}
+
+# Run forever.
+AnyEvent->condvar->recv;
