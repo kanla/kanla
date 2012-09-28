@@ -7,17 +7,27 @@ use v5.10;
 # libanyevent-http-perl
 use AnyEvent::HTTP;
 # libanyevent-perl
+use AnyEvent;
 use AnyEvent::Socket;
+use AnyEvent::DNS;
 # libjson-xs-perl
 use JSON::XS;
 # core
-use Socket qw(SOCK_STREAM);
 use Carp;
 use Data::Dumper;
-# libsocket-getaddrinfo-perl
-use Socket::GetAddrInfo qw(getaddrinfo getnameinfo :constants);
-# liburi-perl
-use URI;
+
+# This code is ripped out of AnyEvent::HTTP. We need to get the hostname from
+# an URL to resolve it via IPv4 _and_ IPv6.
+sub host_from_url {
+    my ($url) = @_;
+
+    my ($uscheme, $uauthority, $upath, $query, undef) = # ignore fragment
+        $url =~ m|^([^:]+):(?://([^/?#]*))?([^?#]*)(?:(\?[^#]*))?(?:#(.*))?$|;
+
+    $uauthority =~ /^(?: .*\@ )? ([^\@:]+) (?: : (\d+) )?$/x
+        or die "Unparsable URL";
+    return lc $1;
+}
 
 # TODO: config
 my $url = "http://www.i3wm.org";
@@ -32,6 +42,42 @@ sub signal_error {
         severity => $severity,
         message => $message
     });
+}
+
+sub verify_availability {
+    my ($ip) = @_;
+    http_get $url,
+        # This timeout of 10s is for each individual stage, e.g. for
+        # connecting, for waiting for a response, etc. It is not a
+        # global timeout.
+        timeout => 10,
+        headers => {
+            'User-Agent' => 'zkj-monitor',
+        },
+        tcp_connect => sub {
+            my (undef, $port, $connect_cb, $prepare_cb) = @_;
+            # Wrap around tcp_connect, replacing the host with our resolved one.
+            AnyEvent::Socket::tcp_connect($ip, $port, $connect_cb, $prepare_cb);
+        },
+        sub {
+            my ($body, $hdr) = @_;
+            if ($hdr->{Status} !~ /^2/) {
+                signal_error('critical', 'HTTP reply ' . $hdr->{Status} . " for $url ($ip)");
+                return;
+            }
+            if ($body !~ /Download the latest version/) {
+                signal_error('critical', "HTTP body of $url ($ip) does not match template");
+                return;
+            }
+        };
+}
+
+sub resolved {
+    # family is either A or AAAA
+    my $family = shift;
+    for my $ip (@_) {
+        verify_availability($ip);
+    }
 }
 
 # Periodically run the check, but don’t wait for the first $interval seconds to
@@ -49,45 +95,9 @@ $main_timer = AnyEvent->timer(
         # Since AnyEvent::HTTP offers no way to specify whether we want to
         # access the website via IPv4 or IPv6, we need to resolve the hostname
         # on our own and specifically connect to the resolved IP address.
-        my $host = URI->new($url)->host;
-        my %hints = (socktype => SOCK_STREAM);
-        my ($err, @res) = getaddrinfo($host, 'www', \%hints);
-        if ($err) {
-            signal_error('critical', "getaddrinfo($host): $err");
-            return;
-        }
-
-        for my $ai (@res) {
-            my ($err, $ip) = getnameinfo($ai->{addr}, NI_NUMERICHOST);
-            if ($err) {
-                signal_error('critical', "getnameinfo(ai->addr): $err");
-                next;
-            }
-            http_get $url,
-                # This timeout of 10s is for each individual stage, e.g. for
-                # connecting, for waiting for a response, etc. It is not a
-                # global timeout.
-                timeout => 10,
-                headers => {
-                    'User-Agent' => 'zkj-monitor',
-                },
-                tcp_connect => sub {
-                    my (undef, $port, $connect_cb, $prepare_cb) = @_;
-                    # Wrap around tcp_connect, replacing the host with our resolved one.
-                    AnyEvent::Socket::tcp_connect($ip, $port, $connect_cb, $prepare_cb);
-                },
-                sub {
-                    my ($body, $hdr) = @_;
-                    if ($hdr->{Status} !~ /^2/) {
-                        signal_error('critical', 'HTTP reply ' . $hdr->{Status} . " for $url ($ip)");
-                        return;
-                    }
-                    if ($body !~ /Download the latest version/) {
-                        signal_error('critical', "HTTP body of $url ($ip) does not match template");
-                        return;
-                    }
-                };
-        }
+        my $host = host_from_url($url);
+        AnyEvent::DNS::a    $host, sub { resolved('A', @_) };
+        AnyEvent::DNS::aaaa $host, sub { resolved('AAAA', @_) };
     });
 
 # Run forever.
