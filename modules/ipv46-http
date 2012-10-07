@@ -76,8 +76,8 @@ sub resolved {
     # family is either A or AAAA
     my $family = shift;
     if (@_ == 0) {
-		signal_error('critical', "Cannot resolve $family DNS record");
-		return;
+        signal_error('critical', "Cannot resolve $family DNS record");
+        return;
     }
     for my $ip (@_) {
         verify_availability($ip);
