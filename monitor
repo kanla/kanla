@@ -6,6 +6,7 @@ use warnings;
 use v5.10;
 # libanyevent-xmpp-perl
 use AnyEvent::XMPP::Client;
+use AnyEvent::XMPP::Ext::Ping;
 # libanyevent-perl
 use AnyEvent;
 use AnyEvent::Util;
@@ -29,6 +30,13 @@ my @queued_messages;
 
 my $xmpp = AnyEvent::XMPP::Client->new();
 $xmpp->add_account('zkj-monitor@jabber.ccc.de', 'geheim');
+
+my $ping = AnyEvent::XMPP::Ext::Ping->new();
+$xmpp->add_extension($ping);
+# Sends a ping request every 60 seconds. If the server does not respond within
+# another 60 seconds, reconnect.
+$ping->auto_timeout(60);
+
 $xmpp->reg_cb(
 	connected => sub {
         my ($self, $account) = @_;
@@ -52,6 +60,7 @@ $xmpp->reg_cb(
             }
         }
     },
+
     contact_request_subscribe => sub {
         my ($cl, $acc, $roster, $contact) = @_;
         # Ignore subscription requests from people who are not in
@@ -63,9 +72,18 @@ $xmpp->reg_cb(
         $contact->send_subscribed;
         $contact->send_subscribe;
     },
+
+    disconnect => sub {
+        my ($self, $account, $host, $port, $message) = @_;
+        say "[XMPP] Disconnected: $message";
+
+        # Try to reconnect, if necessary.
+        $xmpp->update_connections();
+    },
+
     error => sub {
         my ($self, $account, $error) = @_;
-        say "Error: " . $error->string();
+        say "[XMPP] Error: " . $error->string();
 
         # Try to reconnect, if necessary.
         $xmpp->update_connections();
