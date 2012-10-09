@@ -6,7 +6,10 @@ use warnings;
 use v5.10;
 # libanyevent-xmpp-perl
 use AnyEvent::XMPP::Client;
+use AnyEvent::XMPP::Ext::Disco;
 use AnyEvent::XMPP::Ext::Ping;
+use AnyEvent::XMPP::Ext::VCard;
+use AnyEvent::XMPP::Ext::Version;
 # libanyevent-perl
 use AnyEvent;
 use AnyEvent::Util;
@@ -29,7 +32,12 @@ my @destination_accounts = qw(
 my @queued_messages;
 
 my $xmpp = AnyEvent::XMPP::Client->new();
-$xmpp->add_account('zkj-monitor@jabber.ccc.de', 'geheim');
+$xmpp->add_account(
+    'zkj-monitor@jabber.ccc.de',
+    'geheim',
+    undef,
+    undef,
+    { initial_presence => undef });
 
 my $ping = AnyEvent::XMPP::Ext::Ping->new();
 $xmpp->add_extension($ping);
@@ -37,10 +45,45 @@ $xmpp->add_extension($ping);
 # another 60 seconds, reconnect.
 $ping->auto_timeout(60);
 
+# We are a good jabber citizen and mark this client as a bot.
+my $disco = AnyEvent::XMPP::Ext::Disco->new();
+$xmpp->add_extension($disco);
+$disco->set_identity('client', 'bot');
+
+# Advertise VCard support for a nice real name plus an avatar later.
+my $vcard = AnyEvent::XMPP::Ext::VCard->new();
+$disco->enable_feature($vcard->disco_feature);
+
+my $version = AnyEvent::XMPP::Ext::Version->new();
+$version->set_name("zkj-monitor");
+$version->set_version("0.1");
+$version->set_os("Linux");
+$xmpp->add_extension($version);
+$disco->enable_feature($version->disco_feature);
+
+$xmpp->set_presence(undef, 'okay (17:32:00, 2012-10-09)', 11);
+
 $xmpp->reg_cb(
+    stream_ready => sub {
+        my ($cl, $account) = @_;
+        $vcard->hook_on($account->connection(), 1);
+    },
+
 	connected => sub {
         my ($self, $account) = @_;
         say "connected, adding contacts";
+
+        # TODO: vcard avatar should be our logo as soon as we got one :)
+        $vcard->store($account->connection(), {
+                NICKNAME => 'zkj-monitor',
+                FN => 'zkj-monitor',
+            }, sub {
+                my ($error) = @_;
+                if ($error) {
+                    say "[XMPP] VCard upload failed: " . $error->string;
+                }
+            });
+
         for my $jid (@destination_accounts) {
             $account->connection()->get_roster()->new_contact($jid, undef, undef,
                 sub {
