@@ -30,6 +30,11 @@ my @destination_accounts = qw(
 # Messages which were produced while no XMPP connection was established (yet).
 # They will be sent when a connection is established.
 my @queued_messages;
+# An AnyEvent->timer which will send @queued_messages. We need that because we
+# need to wait for presence updates to finish before we can determine an
+# inidividual user’s presence with the highest priority. While it would be
+# easier to send to a bare JID, we also need full JIDs for message receipts.
+my $queued_timer;
 
 my $xmpp = AnyEvent::XMPP::Client->new();
 $xmpp->add_account(
@@ -97,11 +102,23 @@ $xmpp->reg_cb(
                 });
         }
 
-        for my $msg (@queued_messages) {
-            for my $dest (@destination_accounts) {
-                $xmpp->send_message($msg, $dest, undef, 'chat');
-            }
-        }
+    },
+
+    presence_update => sub {
+        my ($cl, $account, $roster, $contact, $old_presence, $new_presence) = @_;
+
+        return if defined($queued_timer);
+        $queued_timer = AnyEvent->timer(
+            # We wait 5 seconds for the presence updates to trickle in. On very
+            # slow uplinks, that might be too short, but then again, monitoring
+            # will likely not work very well anyways in that situation.
+            after => 5,
+            cb => sub {
+                for my $msg (@queued_messages) {
+                    xmpp_msg_all($account, $msg);
+                }
+                undef $queued_timer;
+            });
     },
 
     contact_request_subscribe => sub {
@@ -134,6 +151,27 @@ $xmpp->reg_cb(
 );
 $xmpp->start;
 
+sub xmpp_msg_all {
+    my ($account, $message) = @_;
+
+    for my $dest (@destination_accounts) {
+        my $presence = $xmpp->get_priority_presence_for_jid($dest);
+        if (!defined($presence)) {
+            say "[XMPP] No presence found for $dest, skipping";
+            next;
+        }
+
+        # NB: We cannot use $xmpp->send_message here because
+        # that will make the JID a bare JID and use its own
+        # conversation tracking technique.
+        $account->connection->send_message(
+            $presence->jid,
+            'chat',
+            undef,
+            body => $message);
+    }
+}
+
 sub handle_stderr_msg {
     my ($module, $data) = @_;
     if (!exists($data->{severity}) ||
@@ -144,13 +182,12 @@ sub handle_stderr_msg {
 
     if ($data->{severity} eq 'critical') {
         say "relaying: " . $data->{message};
-        if (!defined($xmpp->find_account_for_dest_jid($destination_accounts[0]))) {
+        my $acc = $xmpp->find_account_for_dest_jid($destination_accounts[0]);
+        if (!defined($acc)) {
             push @queued_messages, $data->{message};
             return;
         }
-        for my $dest (@destination_accounts) {
-            $xmpp->send_message($data->{message}, $dest, undef, 'chat');
-        }
+        xmpp_msg_all($acc, $data->{message});
     }
 }
 
