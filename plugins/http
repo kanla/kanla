@@ -12,6 +12,8 @@ use AnyEvent::Socket;
 use AnyEvent::DNS;
 # libjson-xs-perl
 use JSON::XS;
+# libconfig-general-perl
+use Config::General;
 # core
 use Carp;
 use Data::Dumper;
@@ -29,8 +31,29 @@ sub host_from_url {
     return lc $1;
 }
 
-# TODO: config
-my $url = "http://www.i3wm.org";
+# reads in the whole STDIN
+sub slurp {
+    local $/;
+    <STDIN>;
+}
+
+my $config_str = slurp();
+say "config = *$config_str*";
+
+my $conf = Config::General->new(
+    -String => $config_str,
+    # open all files in utf-8 mode
+    -UTF8 => 1,
+    # normalize yes, on, 1, true and no, off, 0, false to 1 resp. 0
+    -AutoTrue => 1,
+    # case-insensitive key names by lowercasing everything
+    -LowerCaseNames => 1,
+    # provide the ->array, ->hash, etc. methods
+    -ExtendedAccess => 1,
+);
+
+# TODO: support multiple URLs
+my $url = $conf->value('url');
 my $interval = 60;
 
 # Disable buffering.
@@ -52,6 +75,7 @@ sub verify_availability {
         # global timeout.
         timeout => 10,
         headers => {
+            # TODO: configurable User-Agent
             'User-Agent' => 'zkj-monitor',
         },
         tcp_connect => sub {
@@ -77,6 +101,7 @@ sub resolved {
     # family is either A or AAAA
     my $family = shift;
     if (@_ == 0) {
+        # TODO: include the hostname
         signal_error('critical', "Cannot resolve $family DNS record");
         return;
     }

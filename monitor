@@ -3,6 +3,7 @@
 
 use strict;
 use warnings;
+use utf8;
 use v5.10;
 # libanyevent-xmpp-perl
 use AnyEvent::XMPP::Client;
@@ -16,12 +17,40 @@ use AnyEvent::XMPP::Ext::Receipts;
 use AnyEvent;
 use AnyEvent::Util;
 use AnyEvent::Handle;
+# libconfig-general-perl
+use Config::General;
 # libjson-xs-perl
 use JSON::XS;
 # core
 use Carp;
 use Data::Dumper;
 use File::Basename qw(basename);
+
+binmode STDOUT, ':utf8';
+
+my $conf = Config::General->new(
+    # XXX: Not sure if '.' is a good idea. It makes development easier.
+    -ConfigPath => [ '/etc/kanla', '.' ],
+    -ConfigFile => "default.cfg",
+    # open all files in utf-8 mode
+    -UTF8 => 1,
+    # normalize yes, on, 1, true and no, off, 0, false to 1 resp. 0
+    -AutoTrue => 1,
+    # case-insensitive key names by lowercasing everything
+    -LowerCaseNames => 1,
+    # include files relative to the location
+    -IncludeRelative => 1,
+    # allow glob patterns in include statements
+    -IncludeGlob => 1,
+    # allow "include <path>"
+    -UseApacheInclude => 1,
+    # provide the ->array, ->hash, etc. methods
+    -ExtendedAccess => 1,
+    # interpolate config options when referred to as $foobar
+    -InterPolateVars => 1,
+);
+
+# TODO: sanity check: are there no plugins configured?
 
 # TODO: config + multi-account support
 
@@ -196,13 +225,33 @@ sub handle_stderr_msg {
     }
 }
 
-# Now start all the monitoring modules, read their stderr and relay that errors
-# to XMPP.
-for my $module (<modules/*>) {
-    if (! -e $module) {
-        say STDERR "Skipping non-executable module $module";
+# Start all the monitoring modules,
+# read their stderr, relay errors to XMPP.
+my $plugin_cfgs = $conf->obj('monitor');
+for my $name ($conf->keys('monitor')) {
+    my $plugin_cfg = $plugin_cfgs->obj($name);
+    my $plugin = $plugin_cfg->value('plugin');
+
+    # TODO: handle send_alerts_to per plugin
+
+    if (!defined($plugin) || $plugin eq '') {
+        say STDERR qq|Invalid <monitor> block: 'plugin' not specified for "$name"|;
         next;
     }
+
+    if (! -e "plugins/$plugin") {
+        say STDERR qq|Invalid <monitor> block: plugin "$plugin" not found|;
+        next;
+    }
+
+    if (! -X "plugins/$plugin") {
+        say STDERR qq|Invalid <monitor> block: plugin "$plugin" not executable (try chmod +x?)|;
+        next;
+    }
+
+    # Save the config for this plugin to string,
+    # we will feed it to the plugin via stdin below.
+    my $config_str = $plugin_cfg->save_string();
 
     my ($pr, $pw) = AnyEvent::Util::portable_pipe;
     fcntl($pr, AnyEvent::F_SETFD, AnyEvent::FD_CLOEXEC);
@@ -220,13 +269,15 @@ for my $module (<modules/*>) {
 
     my @start_request; @start_request = (json => sub {
         my ($hdl, $hashref) = @_;
-        handle_stderr_msg(basename($module), $hashref);
+        handle_stderr_msg(basename($plugin), $hashref);
         $hdl->push_read(@start_request);
     });
 
     $w->push_read(@start_request);
 
-    my $cv = run_cmd [ $module ],
+    my $cv = run_cmd [ "plugins/$plugin" ],
+        # feed the config on stdin
+        '<', \$config_str,
         # stdout goes to /dev/null for now.
         '>', '/dev/null',
         '2>', $pw;
