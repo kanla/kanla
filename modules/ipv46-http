@@ -61,6 +61,7 @@ sub verify_availability {
         },
         sub {
             my ($body, $hdr) = @_;
+# TODO: better check for a non-error instead of 2xx since 3xx (redirects) might also be okay
             if ($hdr->{Status} !~ /^2/) {
                 signal_error('critical', 'HTTP reply ' . $hdr->{Status} . " for $url ($ip)");
                 return;
