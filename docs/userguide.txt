@@ -3,12 +3,436 @@ The kanla User Guide
 Michael Stapelberg <michael+kanla@stapelberg.de>
 October 2012
 
-foo
+kanla is a daemon which peridiocally checks
+whether your website, mail server, etc.
+are still up and running.
 
-== some top-level section
+In case a health check fails,
+kanla will notify you
+via jabber (XMPP).
 
-bar
+Focus of kanla lies on
+being light-weight,
+being simple,
+using a sane configuration file,
+being well-documented.
 
-=== this is also important
+== Introduction
 
-==== third level!
+Many people run personal websites
+or websites of their pet projects.
+Except for professional sysadmins,
+none of those I asked
+ran any kind of software to notify them about failures.
+Since nobody disagreed with me about the idea being helpful,
+this suggests that existing software is too complex,
+complicated to setup,
+under-documented
+or for some other reason undesirable.
+
+I myself wanted to be notified
+-- by software, not by users --
+when http://i3wm.org is not reachable anymore.
+However, the software I looked at
+could not be configured to verify the actual page contents
+(as opposed to only the HTTP status)
+and did not even support IPv6
+(come on, it’s 2012).
+
+My conclusion was that writing a simple program myself
+would be faster than trying to re-implement plugins
+for existing monitoring/alerting software
+in such a way that I’d be happy with them.
+
+kanla is the fruit of this effort.
+It is intentionally simple
+and focuses on small-scale alerting.
+This means it will *NOT* generate uptime statistics,
+or execute certain actions when some condition is met,
+or handle pager alerts and on-call schedules.
+Instead, it verifies what you describe
+and whenever something is wrong,
+it sends you a message via jabber (XMPP).
+
+=== Terminology
+
+kanla instance::
+	A process of the +kanla+ binary,
+	running with precisely one configuration.
+	You can have multiple instances running
+	and each instance usually has several plugins running.
+
+plugin::
+	A small program which verifies that things are good.
+	For example, the "http" plugin
+	retrieves websites and verifies their content.
+	If anything goes wrong
+	you will get an alert.
+
+alert::
+	The message which kanla sends to you when things go wrong.
+
+== Installation
+
+To install kanla,
+you should by all means
+use your distribution’s package management system.
+
+It is intentional
+that there is no instruction for installing from source.
+
+If there is no package for your distribution,
+consider making one.
+The Debian packaging serves as reference packaging.
+
+=== Locations
+
+kanla itself should be installed as +/usr/bin/kanla+.
+
+Plugins reside in +/usr/share/perl5/auto/share/dist/kanla/+
+(or whereever your perl installation places dist folders).
+A plugin is just an executable file
+(implemented in any language, but preferably Perl)
+which produces output in a certain format on stderr
+when things go wrong.
+Plugins are identified by their file name,
+e.g. "http".
+
+Configuration files are placed in +/etc/kanla/+
+with the default configuration file being named +default.cfg+.
+This file
+-- by default --
+includes every +.cfg+ file in +/etc/kanla/default.d/+
+which is where you will find example configurations
+for every plugin.
+
+//////////////////////////////////////////
+// TODO: where will custom plugins end up?
+//////////////////////////////////////////
+
+== Configuration
+
+The main kanla configuration file is called +/etc/kanla/default.cfg+.
+It contains the jabber (XMPP) account configuration,
+the default alert destination (e.g. your jabber id)
+and includes +/etc/kanla/default.d/*.cfg+.
+
+After modifying the jabber (XMPP) account configuration,
+you need to enable at least one plugin
+by removing the comment signs (+#+)
+in front of every line of its configuration file.
+The provided files serve as a minimum useful example
+(while this documentation poses a reference)
+and will not change often
+so you can modify them
+without being bothered by config file conflicts on upgrades.
+
+It goes without saying that configuration files are encoded as UTF-8
+and UTF-8 is supported throughout kanla.
+
+=== Quick example
+
+*A minimum useful kanla configuration*:
+--------------------------------------------------------------------------------
+<jabber>
+    jid      = "kanla@example.com"
+    password = "kV9eJ4LZ9KRYOCec5W2witq"
+</jabber>
+
+send_alerts_to = <<EOT
+michael@example.com
+EOT
+
+<monitor i3wm website>
+    plugin = http
+    url    = "http://www.i3wm.org/"
+    url    = "http://i3wm.org/"
+</monitor>
+--------------------------------------------------------------------------------
+
+=== Jabber configuration
+
+Jabber configuration is done with one (or multiple) jabber block(s).
+Each block needs to have at least the jid and password attribute.
+The following attributes can be configured:
+
+jid::
+    The jabber id of this account,
+    e.g. +kanla@example.com+.
+password::
+    The password for this account.
+host::
+    The hostname of the jabber server
+    to which to connect to.
+    It is normally *NOT* necessary to specify this,
+    but some networks actively break SRV record resolution.
+port::
+    The port of the jabber server, if non-standard.
+
+*Simple jabber example*:
+--------------------------------------------------------------------------------
+<jabber>
+    jid      = "kanla@example.com"
+    password = "kV9eJ4LZ9KRYOCec5W2witq"
+</jabber>
+--------------------------------------------------------------------------------
+
+*Complex jabber example*:
+--------------------------------------------------------------------------------
+<jabber>
+    jid      = "kanla@example.com"
+    password = "kV9eJ4LZ9KRYOCec5W2witq"
+</jabber>
+
+<jabber>
+    jid      = "kanla@example.net"
+    password = "kV9eJ4LZ9KRYOCec5W2witq"
+    host     = "jabber.example.net"
+    port     = 5222
+</jabber>
+--------------------------------------------------------------------------------
+
+There is no default value for this option,
+therefore *you have to configure this*.
+
+[NOTE]
+kanla will send an
+http://xmpp.org/extensions/xep-0199.html[XEP-0199] ping to the server
+every 60 seconds.
+If the server does not reply within 60 seconds,
+the connection is considered dead
+and will be reconnected.
+
+=== Main configuration
+
+==== send_alerts_to
+
+[[send_alerts_to]]
+
+A list of jabber ids (line-separated)
+to which alerts will be sent.
+This can be overwritten on a per-plugin basis.
+Please use the heredoc syntax,
+otherwise extending this list
+will not work
+(a limitation of the http://metacpan.org/module/Config::General[Config::General] module).
+
+*send_alerts_to example*:
+--------------------------------------------------------------------------------
+send_alerts_to = <<EOT
+michael@example.com
+stefan@example.com
+EOT
+--------------------------------------------------------------------------------
+
+There is no default value for this option,
+therefore *you have to configure this*.
+
+[NOTE]
+================================================================================
+In order to maximize redundancy,
+you can (and should) use multiple jabber ids.
+Of course, they should not use the same infrastructure,
+so use two different jabber servers
+and clients (if possible).
+
+In case you are using Android,
+consider using Google Talk (built-in)
+and Xabber
+(supports http://xmpp.org/extensions/xep-0184.html[XEP-0184] message receipts)
+with a non-google account.
+================================================================================
+
+//////////////////////////////
+// TODO: are full jids okay?
+//////////////////////////////
+
+=== Plugin configuration
+
+There are some configuration directives which are valid for every plugin.
+These directives are:
+
+plugin::
+    Specifies which plugin should be used.
+    This is simply the base filename of the plugin,
+    e.g. "http".
+send_alerts_to::
+    Overwrites the main configuration’s send_alerts_to
+    for this plugin,
+    see <<send_alerts_to>>.
+    Using variables, you can also amend instead of overwrite,
+    see <<variables>>.
+interval::
+    Controls how often the plugin verifies that things are good.
+    This configuration directive is merely a convention,
+    that is, plugins don’t *have to* use it
+    (e.g. in case the plugin needs a more detailed interval configuration),
+    but it is strongly recommended.
+
+=== Plugin: http
+
+The http plugin periodically retrieves the specified URL(s)
+and sends alerts if the HTTP status is not 200
+or anything else went wrong during retrieval.
+
+==== URL
+
+The URL of the site to retrieve.
+This can be anything which the
+http://metacpan.org/module/AnyEvent::HTTP[AnyEvent::HTTP] module accepts.
+
+You can specify this configuration directive multiple times.
+
+*Full URL example*:
+--------------------------------------------------------------------------------
+<monitor i3wm website>
+    plugin = http
+    url    = "http://www.i3wm.org/"
+</monitor>
+--------------------------------------------------------------------------------
+
+There is no default value for this option,
+therefore *you have to configure this*.
+
+==== Family
+
+The address family
+(IPv4, IPv6 or both)
+which should be used when retrieving the URL(s).
+
+The default is to try both IPv4 and IPv6.
+
+*Full family example*:
+--------------------------------------------------------------------------------
+<monitor i3wm website>
+    plugin = http
+    family = ipv4 | ipv6
+    url    = "http://www.i3wm.org/"
+</monitor>
+
+<monitor slashdot>
+    plugin = http
+    # slashdot doesn’t even support IPv6…
+    family = ipv4
+    url    = "http://slashdot.org/"
+</monitor>
+--------------------------------------------------------------------------------
+
+[NOTE]
+The absence of a AAAA DNS record is treated as an error
+(to catch DNS misconfiguration problems).
+Therefore, if your site is IPv4-only,
+you need to explicitly configure that.
+This is intentional --
+it’s 2012,
+your site should really be dual-stacked by now.
+
+== Config recipes
+
+=== Variables
+
+[[variables]]
+
+When configuring many hosts which are alike,
+variables might come in handy.
+kanla enables http://metacpan.org/module/Config::General::Interpolated[Config::General::Interpolated],
+so you can use variables
+by refering to configuration directives
+with a dollar sign prefixed,
+e.g. +$send_alerts_to+ evaluates to the contents
+of the send_alerts_to directive.
+
+You are not confined to the directives which actually exist,
+but you can use any key/value pair you want.
+To avoid troubles, you should prefix your own directives with an underscore.
+kanla will never implement directives starting with an underscore.
+
+*Amending send_alerts_to*:
+--------------------------------------------------------------------------------
+# michael@example.com gets ALL the alerts!
+send_alerts_to = <<EOT
+michael@example.com
+EOT
+
+<monitor i3wm website>
+    plugin         = http
+    url            = "http://www.i3wm.org/"
+
+    # Additionally, alert stefan@example.com.
+    send_alerts_to = <<EOT
+    $send_alerts_to
+    stefan@example.com
+    EOT
+</monitor>
+--------------------------------------------------------------------------------
+
+*Monitor multiple trac instances* (+/etc/kanla/default.cfg+):
+--------------------------------------------------------------------------------
+_trac_url = "bugs.i3wm.org"
+include "default.d/http-trac.cfg"
+
+_trac_url = "trac.edgewall.org"
+include "default.d/http-trac.cfg"
+--------------------------------------------------------------------------------
+
+*Monitor multiple trac instances* (+/etc/kanla/default.d/http-trac.cfg+):
+--------------------------------------------------------------------------------
+<monitor trac at $_trac_url>
+    plugin = http
+    url    = $_trac_url
+# TODO: content matching
+</monitor>
+--------------------------------------------------------------------------------
+
+== Technical details
+
+=== Message receipts
+
+kanla supports jabber’s http://xmpp.org/extensions/xep-0184.html[XEP-0184] message receipts.
+With message receipts,
+delivery of a message is confirmed end-to-end,
+that is, kanla can be sure your device received its message.
+More importantly, when your device does not confirm the message,
+kanla will retry (after 30 seconds) to send the message,
+until your device confirms the message.
+
+You will immediately notice this feature
+when you configure multiple jabber accounts.
+In that case, kanla will try to deliver alerts
+using one jabber account first,
+and if that fails, it retries with the second one.
+In case you have more than two accounts,
+this is repeated until
+your device confirmed the message or
+there are no accounts left.
+
+For +send_alerts_to+ destinations which do not support XEP-0184,
+kanla will immediately send alerts from all jabber accounts.
+This leads to a storm of alerts on your device,
+but this is intended to keep things simple.
+Lobby your jabber client vendor to implement XEP-0184,
+it’s simple enough.
+
+=== Jabber presences
+
+Let’s assume you configure +michael@example.com+ via +send_alerts_to+
+and you are connected as +michael@example.com+
+on your computer
+and on your smartphone.
+Jabber calls each of these connections a presence.
+
+When sending an alert to +michael@example.com+,
+kanla will chose the presence with the highest priority.
+In case multiple presences have the same priority,
+one of them will be arbitrarily chosen.
+
+By changing the priority in your jabber client(s),
+you can therefore influence where alerts should go.
+
+=== Writing plugins
+
+//////////////////////////////////////////////////////////////
+// TODO: once we actually have a base module, describe it here
+//////////////////////////////////////////////////////////////
+
+=== Plugin interface
