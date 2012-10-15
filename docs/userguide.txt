@@ -1,0 +1,14 @@
+The kanla User Guide
+====================
+Michael Stapelberg <michael+kanla@stapelberg.de>
+October 2012
+
+foo
+
+== some top-level section
+
+bar
+
+=== this is also important
+
+==== third level!
