@@ -48,6 +48,9 @@ sub run {
         -IncludeRelative => 1,
         # allow glob patterns in include statements
         -IncludeGlob => 1,
+        # allow including the same file multiple times,
+        # since we might have different variables set.
+        -IncludeAgain => 1,
         # allow "include <path>"
         -UseApacheInclude => 1,
         # provide the ->array, ->hash, etc. methods
