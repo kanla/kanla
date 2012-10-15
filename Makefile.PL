@@ -21,7 +21,9 @@ requires 'AnyEvent::HTTP';
 requires 'AnyEvent::Socket';
 requires 'AnyEvent::DNS';
 
-install_script 'script/kanla';
+install_script 'kanla';
+# Install plugins/ into a distribution-shared directory
+install_share('dist', 'plugins');
 
 ################################################################################
 # We generate make targets for every file in docs/
