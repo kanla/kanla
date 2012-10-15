@@ -2,13 +2,26 @@ use inc::Module::Install;
 use Cwd;
 
 name     'kanla';
-all_from 'monitor';
+all_from 'lib/Kanla.pm';
 author   'Michael Stapelberg';
 
 requires 'AnyEvent';
+requires 'AnyEvent::Util';
 requires 'AnyEvent::Handle';
-requires 'AnyEvent::Socket';
+requires 'AnyEvent::XMPP::Client';
+requires 'AnyEvent::XMPP::Ext::Disco';
+requires 'AnyEvent::XMPP::Ext::Ping';
+requires 'AnyEvent::XMPP::Ext::VCard';
+requires 'AnyEvent::XMPP::Ext::Version';
 requires 'JSON::XS';
+requires 'Config::General' => '2.50';
+
+# plugin requirements
+requires 'AnyEvent::HTTP';
+requires 'AnyEvent::Socket';
+requires 'AnyEvent::DNS';
+
+install_script 'script/kanla';
 
 ################################################################################
 # We generate make targets for every file in docs/

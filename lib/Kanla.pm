@@ -26,6 +26,10 @@ use Carp;
 use Data::Dumper;
 use File::Basename qw(basename);
 
+# see http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
+our $VERSION = "1.0";
+$VERSION = eval $VERSION;
+
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
@@ -332,3 +336,53 @@ sub run {
 }
 
 1
+
+__END__
+
+=encoding utf-8
+
+=head1 NAME
+
+kanla - small-scale alerting daemon
+
+=head1 DESCRIPTION
+
+kanla is a daemon which peridiocally checks
+whether your website, mail server, etc.
+are still up and running.
+
+In case a health check fails,
+kanla will notify you
+via jabber (XMPP).
+
+Focus of kanla lies on
+being light-weight,
+being simple,
+using a sane configuration file,
+being well-documented.
+
+=head1 DOCUMENTATION
+
+kanla's documentation can be found at
+http://kanla.zekjur.net/docs/
+
+We have decided to use asciidoc for kanla,
+and to not maintain both POD and asciidoc,
+the POD documentation is intentionally sparse.
+
+=head1 VERSION
+
+Version 1.0
+
+=head1 AUTHOR
+
+Michael Stapelberg, C<< <michael at stapelberg.de> >>
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2012 Michael Stapelberg.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the BSD license.
+
+=cut
