@@ -50,6 +50,12 @@ my $conf = Config::General->new(
     -LowerCaseNames => 1,
     # provide the ->array, ->hash, etc. methods
     -ExtendedAccess => 1,
+    -FlagBits => {
+        family => {
+            ipv4 => 1,
+            ipv6 => 1,
+        },
+    },
 );
 
 # TODO: support multiple URLs
@@ -126,8 +132,12 @@ $main_timer = AnyEvent->timer(
         # access the website via IPv4 or IPv6, we need to resolve the hostname
         # on our own and specifically connect to the resolved IP address.
         my $host = host_from_url($url);
-        AnyEvent::DNS::a    $host, sub { resolved('A', @_) };
-        AnyEvent::DNS::aaaa $host, sub { resolved('AAAA', @_) };
+        if ($conf->obj('family')->value('ipv4')) {
+            AnyEvent::DNS::a    $host, sub { resolved('A', @_) };
+        }
+        if ($conf->obj('family')->value('ipv6')) {
+            AnyEvent::DNS::aaaa $host, sub { resolved('AAAA', @_) };
+        }
     });
 
 # Run forever.
