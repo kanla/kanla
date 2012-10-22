@@ -56,6 +56,9 @@ my $conf = Config::General->new(
             ipv6 => 1,
         },
     },
+    -DefaultConfig => <<'EOT'
+family = ipv4 | ipv6
+EOT
 );
 
 # TODO: support multiple URLs
