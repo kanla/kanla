@@ -50,6 +50,11 @@ my $conf = Config::General->new(
     -LowerCaseNames => 1,
     # provide the ->array, ->hash, etc. methods
     -ExtendedAccess => 1,
+    # we need to merge duplicate options,
+    # otherwise the default config
+    # will not get overwritten,
+    # but amended.
+    -MergeDuplicateOptions => 1,
     -FlagBits => {
         family => {
             ipv4 => 1,
