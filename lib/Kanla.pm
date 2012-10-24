@@ -351,9 +351,6 @@ sub run {
 
         start_plugin($plugin, $name);
     }
-
-    # Run forever.
-    AnyEvent->condvar->recv;
 }
 
 1

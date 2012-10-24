@@ -7,8 +7,12 @@ use utf8;
 use v5.10;
 use lib qw(lib);
 use Kanla;
+use AnyEvent;
 
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
 Kanla::run();
+
+# Run forever.
+AnyEvent->condvar->recv;
