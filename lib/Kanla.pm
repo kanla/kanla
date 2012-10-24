@@ -33,8 +33,118 @@ $VERSION = eval $VERSION;
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
+my $conf;
+my $xmpp;
+
+# Messages which were produced while no XMPP connection was established (yet).
+# They will be sent when a connection is established.
+my @queued_messages;
+
+# TODO: config + multi-account support
+
+my @destination_accounts = qw(
+    michael@stapelberg.de
+);
+
+
+sub start_plugin {
+    my ($plugin, $name) = @_;
+
+    # Save the config for this plugin to string,
+    # we will feed it to the plugin via stdin below.
+    my $config_str = $conf->obj('monitor')->obj($name)->save_string();
+
+    say qq|[$plugin/instance "$name"] starting…|;
+
+    my ($pr, $pw) = AnyEvent::Util::portable_pipe;
+    fcntl($pr, AnyEvent::F_SETFD, AnyEvent::FD_CLOEXEC);
+    my $w;
+    $w = AnyEvent::Handle->new(
+        fh => $pr,
+        on_error => sub {
+            my ($hdl, $fatal, $msg) = @_;
+            say STDERR qq|[$plugin/instance "$name"] error reading from stderr: $msg|;
+
+            # Restart the plugin,
+            # so that you can just kill plugins
+            # after changing their code.
+            #
+            # The delay of 2 seconds avoids
+            # spamming the user with errors
+            # when a plugin exits immediately.
+            my $t;
+            $t = AnyEvent->timer(
+                after => 2,
+                cb => sub {
+                    start_plugin($plugin, $name);
+                    undef $t;
+                });
+            $w->destroy;
+        });
+
+    my @start_request; @start_request = (json => sub {
+        my ($hdl, $hashref) = @_;
+        handle_stderr_msg(basename($plugin), $hashref);
+        $hdl->push_read(@start_request);
+    });
+
+    $w->push_read(@start_request);
+
+    my $cv = run_cmd [ "plugins/$plugin" ],
+        # feed the config on stdin
+        '<', \$config_str,
+        # stdout goes to /dev/null for now.
+        '>', '/dev/null',
+        '2>', $pw;
+    $cv->cb(sub {
+        my $status = shift->recv;
+        say STDERR qq|[$plugin/instance "$name"] exited with exit code $status|;
+    });
+}
+
+sub xmpp_msg_all {
+    my ($account, $message) = @_;
+
+    for my $dest (@destination_accounts) {
+        my $presence = $xmpp->get_priority_presence_for_jid($dest);
+        if (!defined($presence)) {
+            say "[XMPP] No presence found for $dest, skipping";
+            next;
+        }
+
+        # NB: We cannot use $xmpp->send_message here because
+        # that will make the JID a bare JID and use its own
+        # conversation tracking technique.
+        $account->connection->send_message(
+            $presence->jid,
+            'chat',
+            undef,
+            body => $message);
+    }
+}
+
+sub handle_stderr_msg {
+    my ($module, $data) = @_;
+    if (!exists($data->{severity}) ||
+        !exists($data->{message})) {
+        say STDERR "Malformed JSON output from module $module (missing severity or messages property).";
+        return;
+    }
+
+    if ($data->{severity} eq 'critical') {
+        say "relaying: " . $data->{message};
+        my $acc = $xmpp->find_account_for_dest_jid($destination_accounts[0]);
+        if (!defined($acc)) {
+            push @queued_messages, $data->{message};
+            return;
+        }
+        xmpp_msg_all($acc, $data->{message});
+    }
+}
+
+
 sub run {
-    my $conf = Config::General->new(
+    $conf = Config::General->new(
         # XXX: Not sure if '.' is a good idea. It makes development easier.
         -ConfigPath => [ '/etc/kanla', '.' ],
         -ConfigFile => "default.cfg",
@@ -69,22 +179,13 @@ sub run {
         exit 1;
     }
 
-    # TODO: config + multi-account support
-
-    my @destination_accounts = qw(
-        michael@stapelberg.de
-    );
-
-    # Messages which were produced while no XMPP connection was established (yet).
-    # They will be sent when a connection is established.
-    my @queued_messages;
     # An AnyEvent->timer which will send @queued_messages. We need that because we
     # need to wait for presence updates to finish before we can determine an
     # inidividual user’s presence with the highest priority. While it would be
     # easier to send to a bare JID, we also need full JIDs for message receipts.
     my $queued_timer;
 
-    my $xmpp = AnyEvent::XMPP::Client->new(debug => 1);
+    $xmpp = AnyEvent::XMPP::Client->new(debug => 1);
 
     my @accounts;
     if (!$conf->is_array('jabber')) {
@@ -212,100 +313,6 @@ sub run {
     );
     $xmpp->start;
 
-    sub xmpp_msg_all {
-        my ($account, $message) = @_;
-
-        for my $dest (@destination_accounts) {
-            my $presence = $xmpp->get_priority_presence_for_jid($dest);
-            if (!defined($presence)) {
-                say "[XMPP] No presence found for $dest, skipping";
-                next;
-            }
-
-            # NB: We cannot use $xmpp->send_message here because
-            # that will make the JID a bare JID and use its own
-            # conversation tracking technique.
-            $account->connection->send_message(
-                $presence->jid,
-                'chat',
-                undef,
-                body => $message);
-        }
-    }
-
-    sub handle_stderr_msg {
-        my ($module, $data) = @_;
-        if (!exists($data->{severity}) ||
-            !exists($data->{message})) {
-            say STDERR "Malformed JSON output from module $module (missing severity or messages property).";
-            return;
-        }
-
-        if ($data->{severity} eq 'critical') {
-            say "relaying: " . $data->{message};
-            my $acc = $xmpp->find_account_for_dest_jid($destination_accounts[0]);
-            if (!defined($acc)) {
-                push @queued_messages, $data->{message};
-                return;
-            }
-            xmpp_msg_all($acc, $data->{message});
-        }
-    }
-
-    sub start_plugin {
-        my ($plugin, $name) = @_;
-
-        # Save the config for this plugin to string,
-        # we will feed it to the plugin via stdin below.
-        my $config_str = $conf->obj('monitor')->obj($name)->save_string();
-
-        say qq|[$plugin/instance "$name"] starting…|;
-
-        my ($pr, $pw) = AnyEvent::Util::portable_pipe;
-        fcntl($pr, AnyEvent::F_SETFD, AnyEvent::FD_CLOEXEC);
-        my $w;
-        $w = AnyEvent::Handle->new(
-            fh => $pr,
-            on_error => sub {
-                my ($hdl, $fatal, $msg) = @_;
-                say STDERR qq|[$plugin/instance "$name"] error reading from stderr: $msg|;
-
-                # Restart the plugin,
-                # so that you can just kill plugins
-                # after changing their code.
-                #
-                # The delay of 2 seconds avoids
-                # spamming the user with errors
-                # when a plugin exits immediately.
-                my $t;
-                $t = AnyEvent->timer(
-                    after => 2,
-                    cb => sub {
-                        start_plugin($plugin, $name);
-                        undef $t;
-                    });
-                $w->destroy;
-            });
-
-        my @start_request; @start_request = (json => sub {
-            my ($hdl, $hashref) = @_;
-            handle_stderr_msg(basename($plugin), $hashref);
-            $hdl->push_read(@start_request);
-        });
-
-        $w->push_read(@start_request);
-
-        my $cv = run_cmd [ "plugins/$plugin" ],
-            # feed the config on stdin
-            '<', \$config_str,
-            # stdout goes to /dev/null for now.
-            '>', '/dev/null',
-            '2>', $pw;
-        $cv->cb(sub {
-            my $status = shift->recv;
-            say STDERR qq|[$plugin/instance "$name"] exited with exit code $status|;
-        });
-    }
 
     # Start all the monitoring modules,
     # read their stderr, relay errors to XMPP.
