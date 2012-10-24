@@ -13,6 +13,10 @@ use Config::General;
 # core
 use Carp;
 use Data::Dumper;
+use IO::Handle;
+
+my $errorfh = IO::Handle->new_from_fd(3, 'w');
+$errorfh->autoflush(1);
 
 # reads in the whole STDIN
 sub slurp {
@@ -42,7 +46,7 @@ $| = 1;
 
 sub signal_error {
     my ($severity, $message) = @_;
-    say STDERR encode_json({
+    say $errorfh encode_json({
         severity => $severity,
         message => $message
     });

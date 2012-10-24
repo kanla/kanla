@@ -95,7 +95,8 @@ sub start_plugin {
         '<', \$config_str,
         # stdout goes to /dev/null for now.
         '>', '/dev/null',
-        '2>', $pw;
+        # TODO: proxy stderr into our log so that one can easily spot plugin failures
+        '3>', $pw;
     $cv->cb(sub {
         my $status = shift->recv;
         say STDERR qq|[$plugin/instance "$name"] exited with exit code $status|;
