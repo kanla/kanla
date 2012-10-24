@@ -4,11 +4,14 @@
 use Test::More;
 use File::Temp qw(tempfile);
 use IO::Handle;
+use POSIX qw(setsid);
 # libtest-mockmodule-perl
 use Test::MockModule;
 use strict;
 use warnings;
 use Kanla;
+
+setsid();
 
 # Provide a configuration file
 my ($fh, $filename) = tempfile(UNLINK => 1);
@@ -65,3 +68,8 @@ my $retval = $cv->recv;
 ok($retval, 'mocked send_message was called');
 
 done_testing;
+
+# Kill all child processes,
+# otherwise a 'prove' process hangs.
+$SIG{TERM} = sub { };
+kill('TERM', 0);
