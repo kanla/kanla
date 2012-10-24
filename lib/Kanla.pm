@@ -142,12 +142,15 @@ sub handle_stderr_msg {
     }
 }
 
-
 sub run {
+    my ($class, %args) = @_;
+
+    $args{configfile} //= 'default.cfg';
+
     $conf = Config::General->new(
         # XXX: Not sure if '.' is a good idea. It makes development easier.
         -ConfigPath => [ '/etc/kanla', '.' ],
-        -ConfigFile => "default.cfg",
+        -ConfigFile => $args{configfile},
         # open all files in utf-8 mode
         -UTF8 => 1,
         # normalize yes, on, 1, true and no, off, 0, false to 1 resp. 0
