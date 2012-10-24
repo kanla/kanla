@@ -183,6 +183,13 @@ sub run {
         exit 1;
     }
 
+    # also: are there any jabber accounts configured?
+    if (!$conf->exists('jabber')) {
+        say STDERR 'Your configuration does not contain any <jabber> blocks.';
+        say STDERR 'Without these blocks, running this program does not make sense.';
+        exit 1;
+    }
+
     # An AnyEvent->timer which will send @queued_messages. We need that because we
     # need to wait for presence updates to finish before we can determine an
     # inidividual user’s presence with the highest priority. While it would be
