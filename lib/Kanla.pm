@@ -176,7 +176,8 @@ sub run {
     say "  $_" for $conf->files;
 
     # sanity check: are there any plugins configured?
-    if (scalar $conf->keys('monitor') == 0) {
+    if (!defined($conf->keys('monitor')) ||
+        scalar $conf->keys('monitor') == 0) {
         say STDERR 'Your configuration does not contain any <monitor> blocks.';
         say STDERR 'Without these blocks, running this program does not make sense.';
         exit 1;
