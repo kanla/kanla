@@ -12,6 +12,7 @@ use strict;
 use warnings;
 use utf8;
 use v5.10;
+
 # libanyevent-xmpp-perl
 use AnyEvent::XMPP::Client;
 use AnyEvent::XMPP::Ext::Disco;
@@ -20,14 +21,18 @@ use AnyEvent::XMPP::Ext::VCard;
 use AnyEvent::XMPP::Ext::Version;
 use lib qw(.);
 use AnyEvent::XMPP::Ext::Receipts;
+
 # libanyevent-perl
 use AnyEvent;
 use AnyEvent::Util;
 use AnyEvent::Handle;
+
 # libconfig-general-perl
 use Config::General;
+
 # libjson-xs-perl
 use JSON::XS;
+
 # core
 use Carp;
 use Data::Dumper;
@@ -53,7 +58,6 @@ my @destination_accounts = qw(
     michael@stapelberg.de
 );
 
-
 sub start_plugin {
     my ($plugin, $name) = @_;
 
@@ -67,10 +71,11 @@ sub start_plugin {
     fcntl($pr, AnyEvent::F_SETFD, AnyEvent::FD_CLOEXEC);
     my $w;
     $w = AnyEvent::Handle->new(
-        fh => $pr,
+        fh       => $pr,
         on_error => sub {
             my ($hdl, $fatal, $msg) = @_;
-            say STDERR qq|[$plugin/instance "$name"] error reading from stderr: $msg|;
+            say STDERR
+                qq|[$plugin/instance "$name"] error reading from stderr: $msg|;
 
             # Restart the plugin,
             # so that you can just kill plugins
@@ -82,32 +87,39 @@ sub start_plugin {
             my $t;
             $t = AnyEvent->timer(
                 after => 2,
-                cb => sub {
+                cb    => sub {
                     start_plugin($plugin, $name);
                     undef $t;
                 });
             $w->destroy;
         });
 
-    my @start_request; @start_request = (json => sub {
-        my ($hdl, $hashref) = @_;
-        handle_stderr_msg(basename($plugin), $hashref);
-        $hdl->push_read(@start_request);
-    });
+    my @start_request;
+    @start_request = (
+        json => sub {
+            my ($hdl, $hashref) = @_;
+            handle_stderr_msg(basename($plugin), $hashref);
+            $hdl->push_read(@start_request);
+        });
 
     $w->push_read(@start_request);
 
-    my $cv = run_cmd [ "plugins/$plugin" ],
+    my $cv = run_cmd ["plugins/$plugin"],
+
         # feed the config on stdin
         '<', \$config_str,
+
         # stdout goes to /dev/null for now.
         '>', '/dev/null',
+
         # TODO: proxy stderr into our log so that one can easily spot plugin failures
         '3>', $pw;
-    $cv->cb(sub {
-        my $status = shift->recv;
-        say STDERR qq|[$plugin/instance "$name"] exited with exit code $status|;
-    });
+    $cv->cb(
+        sub {
+            my $status = shift->recv;
+            say STDERR
+                qq|[$plugin/instance "$name"] exited with exit code $status|;
+        });
 }
 
 sub xmpp_msg_all {
@@ -127,7 +139,8 @@ sub xmpp_msg_all {
             $presence->jid,
             'chat',
             undef,
-            body => $message);
+            body => $message
+        );
     }
 }
 
@@ -135,7 +148,8 @@ sub handle_stderr_msg {
     my ($module, $data) = @_;
     if (!exists($data->{severity}) ||
         !exists($data->{message})) {
-        say STDERR "Malformed JSON output from module $module (missing severity or messages property).";
+        say STDERR
+"Malformed JSON output from module $module (missing severity or messages property).";
         return;
     }
 
@@ -156,26 +170,36 @@ sub run {
     $args{configfile} //= 'default.cfg';
 
     $conf = Config::General->new(
+
         # XXX: Not sure if '.' is a good idea. It makes development easier.
         -ConfigPath => [ '/etc/kanla', '.' ],
         -ConfigFile => $args{configfile},
+
         # open all files in utf-8 mode
         -UTF8 => 1,
+
         # normalize yes, on, 1, true and no, off, 0, false to 1 resp. 0
         -AutoTrue => 1,
+
         # case-insensitive key names by lowercasing everything
         -LowerCaseNames => 1,
+
         # include files relative to the location
         -IncludeRelative => 1,
+
         # allow glob patterns in include statements
         -IncludeGlob => 1,
+
         # allow including the same file multiple times,
         # since we might have different variables set.
         -IncludeAgain => 1,
+
         # allow "include <path>"
         -UseApacheInclude => 1,
+
         # provide the ->array, ->hash, etc. methods
         -ExtendedAccess => 1,
+
         # interpolate config options when referred to as $foobar
         -InterPolateVars => 1,
     );
@@ -187,14 +211,16 @@ sub run {
     if (!defined($conf->keys('monitor')) ||
         scalar $conf->keys('monitor') == 0) {
         say STDERR 'Your configuration does not contain any <monitor> blocks.';
-        say STDERR 'Without these blocks, running this program does not make sense.';
+        say STDERR
+            'Without these blocks, running this program does not make sense.';
         exit 1;
     }
 
     # also: are there any jabber accounts configured?
     if (!$conf->exists('jabber')) {
         say STDERR 'Your configuration does not contain any <jabber> blocks.';
-        say STDERR 'Without these blocks, running this program does not make sense.';
+        say STDERR
+            'Without these blocks, running this program does not make sense.';
         exit 1;
     }
 
@@ -224,6 +250,7 @@ sub run {
 
     my $ping = AnyEvent::XMPP::Ext::Ping->new();
     $xmpp->add_extension($ping);
+
     # Sends a ping request every 60 seconds. If the server does not respond within
     # another 60 seconds, reconnect.
     $ping->auto_timeout(60);
@@ -244,7 +271,8 @@ sub run {
     $xmpp->add_extension($version);
     $disco->enable_feature($version->disco_feature);
 
-    my $receipts = AnyEvent::XMPP::Ext::Receipts->new(disco => $disco, debug => 1);
+    my $receipts =
+        AnyEvent::XMPP::Ext::Receipts->new(disco => $disco, debug => 1);
     $xmpp->add_extension($receipts);
 
     $xmpp->set_presence(undef, 'okay (17:32:00, 2012-10-09)', 11);
@@ -260,10 +288,13 @@ sub run {
             say "connected, adding contacts";
 
             # TODO: vcard avatar should be our logo as soon as we got one :)
-            $vcard->store($account->connection(), {
+            $vcard->store(
+                $account->connection(),
+                {
                     NICKNAME => 'zkj-monitor',
-                    FN => 'zkj-monitor',
-                }, sub {
+                    FN       => 'zkj-monitor',
+                },
+                sub {
                     my ($error) = @_;
                     if ($error) {
                         say "[XMPP] VCard upload failed: " . $error->string;
@@ -271,7 +302,8 @@ sub run {
                 });
 
             for my $jid (@destination_accounts) {
-                $account->connection()->get_roster()->new_contact($jid, undef, undef,
+                $account->connection()->get_roster()->new_contact(
+                    $jid, undef, undef,
                     sub {
                         my ($contact, $err) = @_;
                         if (defined($contact)) {
@@ -286,15 +318,17 @@ sub run {
         },
 
         presence_update => sub {
-            my ($cl, $account, $roster, $contact, $old_presence, $new_presence) = @_;
+            my ($cl, $account, $roster, $contact, $old_presence, $new_presence)
+                = @_;
 
             return if defined($queued_timer);
             $queued_timer = AnyEvent->timer(
+
                 # We wait 5 seconds for the presence updates to trickle in. On very
                 # slow uplinks, that might be too short, but then again, monitoring
                 # will likely not work very well anyways in that situation.
                 after => 5,
-                cb => sub {
+                cb    => sub {
                     for my $msg (@queued_messages) {
                         xmpp_msg_all($account, $msg);
                     }
@@ -304,6 +338,7 @@ sub run {
 
         contact_request_subscribe => sub {
             my ($cl, $acc, $roster, $contact) = @_;
+
             # Ignore subscription requests from people who are not in
             # @destination_accounts.
             return unless ($contact->jid ~~ @destination_accounts);
@@ -332,28 +367,29 @@ sub run {
     );
     $xmpp->start;
 
-
     # Start all the monitoring modules,
     # read their stderr, relay errors to XMPP.
     my $plugin_cfgs = $conf->obj('monitor');
     for my $name ($conf->keys('monitor')) {
         my $plugin_cfg = $plugin_cfgs->obj($name);
-        my $plugin = $plugin_cfg->value('plugin');
+        my $plugin     = $plugin_cfg->value('plugin');
 
         # TODO: handle send_alerts_to per plugin
 
         if (!defined($plugin) || $plugin eq '') {
-            say STDERR qq|Invalid <monitor> block: 'plugin' not specified for "$name"|;
+            say STDERR
+                qq|Invalid <monitor> block: 'plugin' not specified for "$name"|;
             next;
         }
 
-        if (! -e "plugins/$plugin") {
+        if (!-e "plugins/$plugin") {
             say STDERR qq|Invalid <monitor> block: plugin "$plugin" not found|;
             next;
         }
 
-        if (! -X "plugins/$plugin") {
-            say STDERR qq|Invalid <monitor> block: plugin "$plugin" not executable (try chmod +x?)|;
+        if (!-X "plugins/$plugin") {
+            say STDERR
+qq|Invalid <monitor> block: plugin "$plugin" not executable (try chmod +x?)|;
             next;
         }
 
