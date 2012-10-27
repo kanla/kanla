@@ -296,6 +296,8 @@ therefore *you have to configure this*.
 
 ==== Family
 
+[[http-family]]
+
 The address family
 (IPv4, IPv6 or both)
 which should be used when retrieving the URL(s).
@@ -326,6 +328,73 @@ you need to explicitly configure that.
 This is intentional --
 it’s 2012,
 your site should really be dual-stacked by now.
+
+=== Plugin: smtp
+
+The smtp plugin periodically connects to an SMTP server
+and sends alerts
+if the server does not send the SMTP greeting
+(220 …)
+within 10 seconds after connecting
+or anything else went wrong on the DNS/TCP level.
+
+==== Host
+
+The host
+(may include a port)
+of the smtp server to check.
+Every syntax which
+https://metacpan.org/module/AnyEvent::Socket[AnyEvent::Socket]’s
+parse_hostport function understands is accepted
+(this covers all common IPv4 and IPv6 formats).
+
+You can specify this configuration directive multiple times.
+
+*Full Host example*:
+--------------------------------------------------------------------------------
+<monitor i3 smtp>
+    plugin = smtp
+    host   = infra.in.zekjur.net
+</monitor>
+
+<monitor i3 smtp>
+    plugin = smtp
+    family = ipv6
+    host   = "[2001:4d88:100e:1::2]:submission"
+</monitor>
+--------------------------------------------------------------------------------
+
+==== Family
+
+See <<http-family>>.
+
+==== Timeout
+
+The timeout (in seconds) for
+each connection attempt (via TCP)
+and for receiving the greeting.
+
+The default value is a timeout 10 seconds.
+This means it is okay if the TCP connection
+can be established after 9 seconds
+and the SMTP greeting is read after another 9 seconds.
+
+*Full timeout example*:
+--------------------------------------------------------------------------------
+<monitor i3 smtp>
+    plugin   = smtp
+
+    # Gee, we could really use some newer hardware.
+    # Until then, cut the server some slack:
+    # Check only every 5 minutes,
+    # wait up to 60 seconds for connections
+    # and for reading the greeting.
+    timeout  = 60
+    interval = 300
+
+    host     = infra.in.zekjur.net
+</monitor>
+--------------------------------------------------------------------------------
 
 == Config recipes
 
