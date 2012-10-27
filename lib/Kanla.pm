@@ -412,7 +412,6 @@ sub run {
 
     # Start all the monitoring modules,
     # read their stderr, relay errors to XMPP.
-    my $plugin_cfgs = $conf->obj('monitor');
     for my $name ($conf->keys('monitor')) {
         my $plugin_cfg = $plugin_cfgs->obj($name);
         my $plugin     = $plugin_cfg->value('plugin');
