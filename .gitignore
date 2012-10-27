@@ -5,6 +5,7 @@ docs/*.html
 # From: https://github.com/github/gitignore/blob/master/Global/Linux.gitignore
 .*
 !.gitignore
+!.perltidyrc
 *~
 *.sw[a-p]
 .directory
