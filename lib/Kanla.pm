@@ -1,3 +1,10 @@
+# -*- Mode: CPerl;
+# cperl-indent-level: 4;
+# cperl-continued-statement-offset: 4;
+# cperl-indent-parens-as-block: t;
+# cperl-tabs-always-indent: t;
+# cperl-indent-subs-specially: nil;
+# -*-
 # vim:ts=4:sw=4:expandtab
 package Kanla;
 
