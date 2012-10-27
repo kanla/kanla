@@ -24,6 +24,8 @@ say $fh <<'EOT';
     password = "kV9eJ4LZ9KRYOCec5W2witq"
 </jabber>
 
+send_alerts_to = "testJID@example.com"
+
 <monitor always fail>
     plugin = fail
 </monitor>

@@ -52,18 +52,20 @@ my $xmpp;
 # They will be sent when a connection is established.
 my @queued_messages;
 
-# TODO: config + multi-account support
-
-my @destination_accounts = qw(
-    michael@stapelberg.de
-);
-
 sub start_plugin {
     my ($plugin, $name) = @_;
 
     # Save the config for this plugin to string,
     # we will feed it to the plugin via stdin below.
-    my $config_str = $conf->obj('monitor')->obj($name)->save_string();
+    my $config     = $conf->obj('monitor')->obj($name);
+    my $config_str = $config->save_string();
+
+    my @dest;
+    if ($config->exists('send_alerts_to')) {
+        @dest = split("\n", $config->value('send_alerts_to'));
+    } else {
+        @dest = split("\n", $conf->value('send_alerts_to'));
+    }
 
     say qq|[$plugin/instance "$name"] starting…|;
 
@@ -98,7 +100,7 @@ sub start_plugin {
     @start_request = (
         json => sub {
             my ($hdl, $hashref) = @_;
-            handle_stderr_msg(basename($plugin), $hashref);
+            handle_stderr_msg(basename($plugin), \@dest, $hashref);
             $hdl->push_read(@start_request);
         });
 
@@ -122,13 +124,26 @@ sub start_plugin {
         });
 }
 
-sub xmpp_msg_all {
-    my ($account, $message) = @_;
+sub xmpp_empty_queue {
+    my @leftover;
 
-    for my $dest (@destination_accounts) {
-        my $presence = $xmpp->get_priority_presence_for_jid($dest);
+    for my $entry (@queued_messages) {
+        my ($jid, $message) = @$entry;
+
+        # Find the account,
+        # if unsuccessful,
+        # no account
+        # is connected.
+        my $account = $xmpp->find_account_for_dest_jid($jid);
+        if (!defined($account)) {
+            push @leftover, $entry;
+            next;
+        }
+
+        my $presence = $xmpp->get_priority_presence_for_jid($jid);
         if (!defined($presence)) {
-            say "[XMPP] No presence found for $dest, skipping";
+            say "[XMPP] No presence found for $jid, skipping";
+            push @leftover, $entry;
             next;
         }
 
@@ -142,10 +157,12 @@ sub xmpp_msg_all {
             body => $message
         );
     }
+
+    @queued_messages = @leftover;
 }
 
 sub handle_stderr_msg {
-    my ($module, $data) = @_;
+    my ($module, $dest, $data) = @_;
     if (!exists($data->{severity}) ||
         !exists($data->{message})) {
         say STDERR
@@ -155,12 +172,10 @@ sub handle_stderr_msg {
 
     if ($data->{severity} eq 'critical') {
         say "relaying: " . $data->{message};
-        my $acc = $xmpp->find_account_for_dest_jid($destination_accounts[0]);
-        if (!defined($acc)) {
-            push @queued_messages, $data->{message};
-            return;
+        for my $jid (@$dest) {
+            push @queued_messages, [ $jid, $data->{message} ];
         }
-        xmpp_msg_all($acc, $data->{message});
+        xmpp_empty_queue();
     }
 }
 
@@ -222,6 +237,36 @@ sub run {
         say STDERR
             'Without these blocks, running this program does not make sense.';
         exit 1;
+    }
+
+    # Collect all jabber IDs
+    # to add them to our roster
+    # and allow subscription requests.
+    my @all_jids;
+    my $sat_global;
+    if ($conf->exists('send_alerts_to')) {
+
+        # Remember that there is a global send_alerts_to directive,
+        # so that we can throw errors
+        # when a module does not have its own
+        # and there is no global send_alerts_to.
+        $sat_global = 1;
+        @all_jids = (@all_jids, split("\n", $conf->value('send_alerts_to')));
+    }
+
+    my $plugin_cfgs = $conf->obj('monitor');
+    for my $name ($conf->keys('monitor')) {
+        my $plugin_cfg = $plugin_cfgs->obj($name);
+        if (!$plugin_cfg->exists('send_alerts_to')) {
+            if (!$sat_global) {
+                say STDERR
+"The <monitor $name> block is missing the send_alerts_to directive";
+                exit 1;
+            }
+            next;
+        }
+        @all_jids =
+            (@all_jids, split("\n", $plugin_cfg->value('send_alerts_to')));
     }
 
     # An AnyEvent->timer which will send @queued_messages. We need that because we
@@ -301,7 +346,7 @@ sub run {
                     }
                 });
 
-            for my $jid (@destination_accounts) {
+            for my $jid (@all_jids) {
                 $account->connection()->get_roster()->new_contact(
                     $jid, undef, undef,
                     sub {
@@ -329,9 +374,7 @@ sub run {
                 # will likely not work very well anyways in that situation.
                 after => 5,
                 cb    => sub {
-                    for my $msg (@queued_messages) {
-                        xmpp_msg_all($account, $msg);
-                    }
+                    xmpp_empty_queue();
                     undef $queued_timer;
                 });
         },
@@ -340,8 +383,8 @@ sub run {
             my ($cl, $acc, $roster, $contact) = @_;
 
             # Ignore subscription requests from people who are not in
-            # @destination_accounts.
-            return unless ($contact->jid ~~ @destination_accounts);
+            # @all_jids.
+            return unless ($contact->jid ~~ @all_jids);
 
             # Acknowledge everything else.
             say "Acknowledging subscription request from " . $contact->jid;
