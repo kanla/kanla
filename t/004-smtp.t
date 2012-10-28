@@ -162,7 +162,7 @@ test_plugin(
     set({
             'severity' => 'critical',
             'message'  => re(
-qr/^Timeout \(1 s\) waiting for SMTP greeting on \[127\.0\.0\.1\]:[0-9]+/
+qr/^Timeout \(1 s\) on \[127\.0\.0\.1\]:[0-9]+/
             ),
         },
         {
