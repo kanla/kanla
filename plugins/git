@@ -1,0 +1,72 @@
+#!/usr/bin/env perl
+# -*- Mode: CPerl;
+# cperl-indent-level: 4;
+# cperl-continued-statement-offset: 4;
+# cperl-indent-parens-as-block: t;
+# cperl-tabs-always-indent: t;
+# cperl-indent-subs-specially: nil;
+# -*-
+# vim:ts=4:sw=4:expandtab
+
+# To make development easier.
+use lib qw(lib);
+
+use Kanla::Plugin;
+use Kanla::Plugin::Banner;
+
+my @urls;
+if (!$conf->is_array('url')) {
+    @urls = ($conf->value('url'));
+} else {
+    @urls = $conf->array('url');
+}
+
+sub run {
+    for my $url (@urls) {
+
+	# This is ripped out of AnyEvent::HTTP.
+	# If the code sucks,
+	# we’d have to replace AnyEvent::HTTP,
+	# and that’s not going to happen
+	# due to the scope of the project.
+	# Therefore, this fragment is
+	# good enough by definition :).
+        my ($uscheme, $uauthority, $upath, $query, undef) =    # ignore fragment
+            $url =~
+            m|^([^:]+):(?://([^/?#]*))?([^?#]*)(?:(\?[^#]*))?(?:#(.*))?$|;
+
+        $uauthority =~ /^(?: .*\@ )? ([^\@:]+) (?: : (\d+) )?$/x or
+            die "Unparsable URL";
+
+	my $host = lc $1;
+
+        # Connect to each configured server.
+        banner_connect(
+            host            => $host,
+            default_service => 'git',
+            cb              => sub {
+                my ($handle, $timeout) = @_;
+
+                my $pktline = sprintf(
+                    "%04xgit-upload-pack %s\0host=%s\0", 0,
+                    $upath, $host
+                );
+                substr($pktline, 0, 4) = sprintf("%04x", length($pktline));
+                $handle->push_write($pktline);
+                $handle->push_read(
+                    line => "\x0",
+                    sub {
+                        my ($handle, $line) = @_;
+                        if ($line !~ /^[0-9a-f]+ HEAD$/) {
+                            signal_error(
+                                'critical',
+                                'Protocol error: expected git sha-id, got ' .
+                                    $line
+                            );
+                        }
+                        undef $timeout;
+                        banner_disconnect($handle);
+                    });
+            });
+    }
+}
