@@ -96,7 +96,6 @@ sub _banner_connect {
                     # allow for better errors here.
                     "Timeout ($timeout s) on [$ip]:$service"
                 );
-                undef $t;
             });
 
         my $handle;    # avoid direct assignment so on_eof has it in scope.
