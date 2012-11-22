@@ -3,7 +3,7 @@ The kanla User Guide
 Michael Stapelberg <michael+kanla@stapelberg.de>
 October 2012
 
-kanla is a daemon which peridiocally checks
+kanla is a daemon which periodically checks
 whether your website, mail server, etc.
 are still up and running.
 
