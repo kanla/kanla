@@ -51,4 +51,16 @@ $postamble
 docs: $alldocfiles
 END_OF_MAKEFILE
 
+postamble <<'END_OF_MAKEFILE';
+install:: extra_install
+pure_install:: extra_install
+install_vendor:: extra_install
+
+extra_install:
+	install -d $(DESTDIR)/etc/kanla
+	install -d $(DESTDIR)/etc/kanla/default.d
+	install -m 644 default.cfg $(DESTDIR)/etc/kanla/default.cfg
+	install -m 644 default.d/* $(DESTDIR)/etc/kanla/default.d/
+END_OF_MAKEFILE
+
 WriteAll;
