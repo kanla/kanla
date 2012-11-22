@@ -1,0 +1,7 @@
+^blib
+\.bak$
+^\.git/
+^\.gitignore$
+^Makefile$
+^Makefile.old$
+^kanla-.+\.tar\.gz$
