@@ -41,7 +41,7 @@ for my $file (@docs) {
 	$htmlfile =~ s/\.txt$/.html/;
 $postamble .= <<EOT
 $htmlfile: $file
-	asciidoc -b html5 -f asciidoc.conf -a toc2 -a disable-javascript -a stylesheet=$cwd/asciidoc-toc.css -n -o - $file | hxtoc -l 2 > $htmlfile
+	asciidoc -b html5 -f asciidoc.conf -a toc2 -a disable-javascript -a data-uri -a icons -a iconsdir=/etc/asciidoc/images/icons/ -a stylesheet=$cwd/asciidoc-toc.css -n -o - $file | hxtoc -l 2 > $htmlfile
 EOT
 }
 
