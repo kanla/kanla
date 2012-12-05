@@ -39,7 +39,7 @@ use Data::Dumper;
 use File::Basename qw(basename);
 
 # see http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
-our $VERSION = "1.0";
+our $VERSION = "1.1";
 $VERSION = eval $VERSION;
 
 binmode STDOUT, ':utf8';
@@ -180,7 +180,7 @@ sub handle_stderr_msg {
 }
 
 sub run {
-    my ($class, %args) = @_;
+    my %args = @_;
 
     $args{configfile} //= 'default.cfg';
 

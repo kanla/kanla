@@ -8,11 +8,28 @@ use v5.10;
 use lib qw(lib);
 use Kanla;
 use AnyEvent;
+use Getopt::Long;
+use Pod::Usage;
 
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
-Kanla::run();
+my $configfile;
+GetOptions(
+    'configfile=s' => \$configfile,
+    'help' => pod2usage({
+        -verbose => 1,
+        -exitval => 0
+    }),
+    'version' => sub {
+        say "kanla $Kanla::VERSION © 2012 Michael Stapelberg and contributors";
+        exit 0;
+    },
+);
+
+Kanla::run(
+    configfile => $configfile
+);
 
 # Run forever.
 AnyEvent->condvar->recv;
@@ -23,7 +40,7 @@ kanla - small-scale alerting daemon
 
 =head1 SYNOPSIS
 
-    kanla
+    kanla [--configfile=path]
 
 =head1 DESCRIPTION
 
@@ -43,15 +60,11 @@ being well-documented.
 
 =head1 OPTIONS
 
-=over 4
+=over
 
-=item B<--configfile=I<path>>
+=item B<--configfile=path>
 
-Use I<path> instead of /etc/all-knowing-dns.conf as configuration file.
-
-=item B<--querylog>
-
-Enable logging every query to stdout (for debugging).
+Use path instead of /etc/kanla/default.cfg as configuration file.
 
 =back
 
