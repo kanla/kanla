@@ -25,7 +25,7 @@ sub test_send_alerts_to {
     binmode($fh, ':utf8');
     say $fh $config;
 
-    Kanla->run(configfile => $filename);
+    Kanla::run(configfile => $filename);
 
     my $cv = AnyEvent->condvar;
 

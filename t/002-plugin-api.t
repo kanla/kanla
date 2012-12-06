@@ -31,7 +31,7 @@ send_alerts_to = "testJID@example.com"
 </monitor>
 EOT
 
-Kanla->run(configfile => $filename);
+Kanla::run(configfile => $filename);
 
 my $cv = AnyEvent->condvar;
 
