@@ -15,6 +15,7 @@ requires 'AnyEvent::XMPP::Ext::VCard';
 requires 'AnyEvent::XMPP::Ext::Version';
 requires 'JSON::XS';
 requires 'Config::General' => '2.50';
+requires 'File::ShareDir';
 
 # plugin requirements
 requires 'AnyEvent::HTTP';

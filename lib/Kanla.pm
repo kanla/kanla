@@ -18,8 +18,10 @@ use AnyEvent::XMPP::Ext::Disco;
 use AnyEvent::XMPP::Ext::Ping;
 use AnyEvent::XMPP::Ext::VCard;
 use AnyEvent::XMPP::Ext::Version;
-use lib qw(.);
 use AnyEvent::XMPP::Ext::Receipts;
+
+# libfile-sharedir-perl
+use File::ShareDir qw(dist_dir);
 
 # libanyevent-perl
 use AnyEvent;
@@ -50,6 +52,24 @@ my $xmpp;
 # Messages which were produced while no XMPP connection was established (yet).
 # They will be sent when a connection is established.
 my @queued_messages;
+
+# Returns the path
+# to the specified plugin
+# by first checking dist_dir('kanla'),
+# then 'plugins/',
+# just like the configuration
+# is searched in /etc/kanla,
+# then in '.'.
+sub plugin_path {
+    my ($plugin) = @_;
+    my $dist_dir = dist_dir('kanla');
+
+    return "$dist_dir/$plugin" if -e "$dist_dir/$plugin";
+
+    # NB: This does not imply
+    # that the plugin exists.
+    return "plugins/$plugin";
+}
 
 sub start_plugin {
     my ($plugin, $name) = @_;
@@ -105,7 +125,7 @@ sub start_plugin {
 
     $w->push_read(@start_request);
 
-    my $cv = run_cmd ["plugins/$plugin"],
+    my $cv = run_cmd [ plugin_path($plugin) ],
 
         # feed the config on stdin
         '<', \$config_str,
@@ -423,12 +443,13 @@ sub run {
             next;
         }
 
-        if (!-e "plugins/$plugin") {
+        my $path = plugin_path($plugin);
+        if (!-e $path) {
             say STDERR qq|Invalid <monitor> block: plugin "$plugin" not found|;
             next;
         }
 
-        if (!-X "plugins/$plugin") {
+        if (!-X $path) {
             say STDERR
 qq|Invalid <monitor> block: plugin "$plugin" not executable (try chmod +x?)|;
             next;
