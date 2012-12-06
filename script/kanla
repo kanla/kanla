@@ -17,10 +17,12 @@ binmode STDERR, ':utf8';
 my $configfile;
 GetOptions(
     'configfile=s' => \$configfile,
-    'help' => pod2usage({
-        -verbose => 1,
-        -exitval => 0
-    }),
+    'help' => sub {
+        pod2usage({
+            -verbose => 1,
+            -exitval => 0,
+        })
+    },
     'version' => sub {
         say "kanla $Kanla::VERSION © 2012 Michael Stapelberg and contributors";
         exit 0;
