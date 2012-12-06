@@ -5,7 +5,6 @@
 # cperl-tabs-always-indent: t;
 # cperl-indent-subs-specially: nil;
 # -*-
-# vim:ts=4:sw=4:expandtab
 package Kanla;
 
 use strict;
@@ -490,3 +489,5 @@ This program is free software; you can redistribute it and/or modify it
 under the terms of the BSD license.
 
 =cut
+
+# vim:ts=4:sw=4:expandtab
