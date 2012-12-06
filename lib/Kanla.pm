@@ -329,7 +329,7 @@ sub run {
     $disco->enable_feature($vcard->disco_feature);
 
     my $version = AnyEvent::XMPP::Ext::Version->new();
-    $version->set_name("zkj-monitor");
+    $version->set_name("kanla");
     $version->set_version("0.1");
     $version->set_os("Linux");
     $xmpp->add_extension($version);
@@ -355,8 +355,8 @@ sub run {
             $vcard->store(
                 $account->connection(),
                 {
-                    NICKNAME => 'zkj-monitor',
-                    FN       => 'zkj-monitor',
+                    NICKNAME => 'kanla',
+                    FN       => 'kanla',
                 },
                 sub {
                     my ($error) = @_;
