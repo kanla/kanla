@@ -79,13 +79,14 @@ sub verify_availability {
                 );
                 return;
             }
-            if ($body !~ /Download the latest version/) {
-                signal_error(
-                    'critical',
-                    "HTTP body of $url ($ip) does not match template"
-                );
-                return;
-            }
+            # TODO: don’t hardcode this!
+            #if ($body !~ /Download the latest version/) {
+            #    signal_error(
+            #        'critical',
+            #        "HTTP body of $url ($ip) does not match template"
+            #    );
+            #    return;
+            #}
         });
 }
 
