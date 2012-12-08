@@ -5,6 +5,7 @@ use Kanla::Plugin;
 
 # libanyevent-http-perl
 use AnyEvent::HTTP;
+
 # libanyevent-perl
 use AnyEvent;
 use AnyEvent::Socket;
@@ -15,12 +16,13 @@ use AnyEvent::DNS;
 sub host_from_url {
     my ($url) = @_;
 
-    my ($uscheme, $uauthority, $upath, $query, undef) = # ignore fragment
+    my ($uscheme, $uauthority, $upath, $query, undef) =    # ignore fragment
         $url =~ m|^([^:]+):(?://([^/?#]*))?([^?#]*)(?:(\?[^#]*))?(?:#(.*))?$|;
 
-    $uauthority =~ /^(?: .*\@ )? ([^\@:]+) (?: : (\d+) )?$/x
-        or die "Unparsable URL";
-# TODO: error out in a way which the main process understands
+    $uauthority =~ /^(?: .*\@ )? ([^\@:]+) (?: : (\d+) )?$/x or
+        die "Unparsable URL";
+
+    # TODO: error out in a way which the main process understands
     return lc $1;
 }
 
@@ -33,38 +35,53 @@ if (!$conf->is_array('url')) {
 
 sub verify_availability {
     my ($ip) = @_;
-    http_get $url,
+    http_get(
+        $url,
+
         # This timeout of 10s is for each individual stage, e.g. for
         # connecting, for waiting for a response, etc. It is not a
         # global timeout.
         timeout => 10,
         headers => {
+
             # TODO: configurable User-Agent
             'User-Agent' => 'zkj-monitor',
         },
         tcp_connect => sub {
             my (undef, $port, $connect_cb, $prepare_cb) = @_;
-            # Wrap around tcp_connect, replacing the host with our resolved one.
+
+            # Wrap around tcp_connect,
+            # replacing the host
+            # with our resolved one.
             AnyEvent::Socket::tcp_connect($ip, $port, $connect_cb, $prepare_cb);
         },
         sub {
             my ($body, $hdr) = @_;
-# TODO: better check for a non-error instead of 2xx since 3xx (redirects) might also be okay
+
+            # TODO: better check for a non-error instead of 2xx since 3xx (redirects) might also be okay
             if ($hdr->{Status} !~ /^2/) {
-                signal_error('critical', 'HTTP reply ' . $hdr->{Status} . " for $url ($ip)");
+                signal_error(
+                    'critical',
+                    'HTTP reply ' . $hdr->{Status} . " for $url ($ip)"
+                );
                 return;
             }
             if ($body !~ /Download the latest version/) {
-                signal_error('critical', "HTTP body of $url ($ip) does not match template");
+                signal_error(
+                    'critical',
+                    "HTTP body of $url ($ip) does not match template"
+                );
                 return;
             }
-        };
+        });
 }
 
 sub resolved {
+
     # family is either A or AAAA
     my $family = shift;
     if (@_ == 0) {
+
         # TODO: include the hostname
         signal_error('critical', "Cannot resolve $family DNS record");
         return;
@@ -76,6 +93,7 @@ sub resolved {
 
 sub run {
     for my $url (@urls) {
+
         # XXX: We re-resolve all the time because it is assumed that you are
         # using a local caching nameserver, which is a good idea anyways and
         # allows us to correctly pick up new addresses once the old ones
@@ -86,7 +104,7 @@ sub run {
         # on our own and specifically connect to the resolved IP address.
         my $host = host_from_url($url);
         if ($conf->obj('family')->value('ipv4')) {
-            AnyEvent::DNS::a    $host, sub { resolved('A', @_) };
+            AnyEvent::DNS::a $host, sub { resolved('A', @_) };
         }
         if ($conf->obj('family')->value('ipv6')) {
             AnyEvent::DNS::aaaa $host, sub { resolved('AAAA', @_) };
