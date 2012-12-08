@@ -39,14 +39,22 @@ if (!$conf->is_array('url')) {
     @urls = $conf->array('url');
 }
 
+my $timeout = ($conf->exists('timeout') ? $conf->value('timeout') : 10);
+
+# Ensure timeout is an int and > 0.
+$timeout += 0;
+$timeout ||= 1;
+
 sub verify_availability {
     my ($ip) = @_;
     http_get(
         $url,
-        # This timeout of 10s is for each individual stage, e.g. for
-        # connecting, for waiting for a response, etc. It is not a
-        # global timeout.
-        timeout => 10,
+        # This timeout is for each individual stage,
+        # e.g. for connecting,
+        # for waiting for a response,
+        # etc.
+        # It is not a global timeout.
+        timeout => $timeout,
         headers => {
             # TODO: configurable User-Agent
             'User-Agent' => 'zkj-monitor',
