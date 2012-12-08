@@ -79,11 +79,13 @@ sub verify_availability {
 sub resolved {
 
     # family is either A or AAAA
-    my $family = shift;
+    my $family   = shift;
+    my $hostname = shift;
     if (@_ == 0) {
-
-        # TODO: include the hostname
-        signal_error('critical', "Cannot resolve $family DNS record");
+        signal_error(
+            'critical',
+            "Cannot resolve $family DNS record for $hostname"
+        );
         return;
     }
     for my $ip (@_) {
@@ -104,10 +106,10 @@ sub run {
         # on our own and specifically connect to the resolved IP address.
         my $host = host_from_url($url);
         if ($conf->obj('family')->value('ipv4')) {
-            AnyEvent::DNS::a $host, sub { resolved('A', @_) };
+            AnyEvent::DNS::a $host, sub { resolved('A', $host, @_) };
         }
         if ($conf->obj('family')->value('ipv6')) {
-            AnyEvent::DNS::aaaa $host, sub { resolved('AAAA', @_) };
+            AnyEvent::DNS::aaaa $host, sub { resolved('AAAA', $host, @_) };
         }
     }
 }
