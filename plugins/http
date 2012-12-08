@@ -62,8 +62,9 @@ sub verify_availability {
         sub {
             my ($body, $hdr) = @_;
 
-            # TODO: better check for a non-error instead of 2xx since 3xx (redirects) might also be okay
-            if ($hdr->{Status} !~ /^2/) {
+            # HTTP 4xx is Client Errors,
+            # HTTP 5xx is Server Errors.
+            if ($hdr->{Status} =~ /^[4-5]/) {
                 signal_error(
                     'critical',
                     'HTTP reply ' . $hdr->{Status} . " for $url ($ip)"
