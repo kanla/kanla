@@ -1,26 +1,14 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
 
-use strict;
-use warnings;
-use v5.10;
+use Kanla::Plugin;
+
 # libanyevent-http-perl
 use AnyEvent::HTTP;
 # libanyevent-perl
 use AnyEvent;
 use AnyEvent::Socket;
 use AnyEvent::DNS;
-# libjson-xs-perl
-use JSON::XS;
-# libconfig-general-perl
-use Config::General;
-# core
-use Carp;
-use Data::Dumper;
-use IO::Handle;
-
-my $errorfh = IO::Handle->new_from_fd(3, 'w');
-$errorfh->autoflush(1);
 
 # This code is ripped out of AnyEvent::HTTP. We need to get the hostname from
 # an URL to resolve it via IPv4 _and_ IPv6.
@@ -32,57 +20,15 @@ sub host_from_url {
 
     $uauthority =~ /^(?: .*\@ )? ([^\@:]+) (?: : (\d+) )?$/x
         or die "Unparsable URL";
+# TODO: error out in a way which the main process understands
     return lc $1;
 }
 
-# reads in the whole STDIN
-sub slurp {
-    local $/;
-    <STDIN>;
-}
-
-my $config_str = slurp();
-say "config = *$config_str*";
-
-my $conf = Config::General->new(
-    -String => $config_str,
-    # open all files in utf-8 mode
-    -UTF8 => 1,
-    # normalize yes, on, 1, true and no, off, 0, false to 1 resp. 0
-    -AutoTrue => 1,
-    # case-insensitive key names by lowercasing everything
-    -LowerCaseNames => 1,
-    # provide the ->array, ->hash, etc. methods
-    -ExtendedAccess => 1,
-    # we need to merge duplicate options,
-    # otherwise the default config
-    # will not get overwritten,
-    # but amended.
-    -MergeDuplicateOptions => 1,
-    -FlagBits => {
-        family => {
-            ipv4 => 1,
-            ipv6 => 1,
-        },
-    },
-    -DefaultConfig => <<'EOT'
-family = ipv4 | ipv6
-EOT
-);
-
-# TODO: support multiple URLs
-my $url = $conf->value('url');
-my $interval = 60;
-
-# Disable buffering.
-$| = 1;
-
-sub signal_error {
-    my ($severity, $message) = @_;
-    say $errorfh encode_json({
-        severity => $severity,
-        message => $message
-    });
+my @urls;
+if (!$conf->is_array('url')) {
+    @urls = ($conf->value('url'));
+} else {
+    @urls = $conf->array('url');
 }
 
 sub verify_availability {
@@ -94,7 +40,7 @@ sub verify_availability {
         timeout => 10,
         headers => {
             # TODO: configurable User-Agent
-            'User-Agent' => 'kanla',
+            'User-Agent' => 'zkj-monitor',
         },
         tcp_connect => sub {
             my (undef, $port, $connect_cb, $prepare_cb) = @_;
@@ -128,13 +74,8 @@ sub resolved {
     }
 }
 
-# Periodically run the check, but don’t wait for the first $interval seconds to
-# pass, but run it right now, too.
-my $main_timer;
-$main_timer = AnyEvent->timer(
-    after => 0,
-    interval => $interval,
-    cb => sub {
+sub run {
+    for my $url (@urls) {
         # XXX: We re-resolve all the time because it is assumed that you are
         # using a local caching nameserver, which is a good idea anyways and
         # allows us to correctly pick up new addresses once the old ones
@@ -150,7 +91,8 @@ $main_timer = AnyEvent->timer(
         if ($conf->obj('family')->value('ipv6')) {
             AnyEvent::DNS::aaaa $host, sub { resolved('AAAA', @_) };
         }
-    });
+    }
+}
 
 # Run forever.
 AnyEvent->condvar->recv;
