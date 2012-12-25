@@ -160,7 +160,7 @@ sub xmpp_empty_queue {
         # no account
         # is connected.
         my $account = $xmpp->find_account_for_dest_jid($jid);
-        if (!defined($account)) {
+        if (!defined($account) || !defined($account->connection)) {
             push @leftover, $entry;
             next;
         }
@@ -427,6 +427,9 @@ sub run {
 
         error => sub {
             my ($self, $account, $error) = @_;
+
+            # TODO: we might want to handle presence errors in a special way.
+            # in case of a 404 they probably mean the user has a typo in his jid.
             say "[XMPP] Error: " . $error->string();
 
             # Try to reconnect, if necessary.
