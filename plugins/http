@@ -7,6 +7,9 @@
 # cperl-indent-subs-specially: nil;
 # -*-
 
+# To make development easier.
+use lib qw(lib);
+
 use Kanla::Plugin;
 
 # libanyevent-http-perl
