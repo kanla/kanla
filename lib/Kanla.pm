@@ -63,14 +63,14 @@ my @queued_messages;
 sub plugin_path {
     my ($plugin) = @_;
 
+    my $dist_dir;
     # We eval because
     # dist_dir dies
     # when the dir does not exist.
-    eval {
-        my $dist_dir = dist_dir('kanla');
-
+    eval { $dist_dir = dist_dir('kanla'); };
+    if (!$@) {
         return "$dist_dir/$plugin" if -e "$dist_dir/$plugin";
-    };
+    }
 
     # NB: This does not imply
     # that the plugin exists.
