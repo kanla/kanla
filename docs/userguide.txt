@@ -1,7 +1,7 @@
 The kanla User Guide
 ====================
 Michael Stapelberg <michael+kanla@stapelberg.de>
-October 2012
+October 2013
 
 kanla is a daemon which periodically checks
 whether your website, mail server, etc.
@@ -37,7 +37,7 @@ However, the software I looked at
 could not be configured to verify the actual page contents
 (as opposed to only the HTTP status)
 and did not even support IPv6
-(come on, it’s 2012).
+(come on, it’s 2013).
 
 My conclusion was that writing a simple program myself
 would be faster than trying to re-implement plugins
@@ -326,7 +326,7 @@ The absence of a AAAA DNS record is treated as an error
 Therefore, if your site is IPv4-only,
 you need to explicitly configure that.
 This is intentional --
-it’s 2012,
+it’s 2013,
 your site should really be dual-stacked by now.
 
 === Plugin: smtp
