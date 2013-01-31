@@ -1,7 +1,7 @@
 The kanla User Guide
 ====================
 Michael Stapelberg <michael+kanla@stapelberg.de>
-October 2013
+January 2013
 
 kanla is a daemon which periodically checks
 whether your website, mail server, etc.
@@ -328,6 +328,69 @@ you need to explicitly configure that.
 This is intentional --
 it’s 2013,
 your site should really be dual-stacked by now.
+
+==== Body
+
+[[http-body]]
+
+You can make kanla verify
+the page it received via HTTP
+actually contains expected content.
+That is,
+sometimes webservers fail even though
+they return the HTTP 200 status,
+for example
+because a poorly written PHP script
+could not establish a database connection.
+
+You can specify this option multiple times,
+all specified checks need to pass.
+
+You can either specify a
+http://perldoc.perl.org/perlre.html[Perl regular expression]
+(e.g. +/foo/+,
+it *MUST* be enclosed in forward slashes)
+or a custom verification function
+(*MUST* start with "sub {"),
+see the example below.
+Functions will be called with the
+full HTTP body string
+as first argument.
+
+This option has no default value,
+meaning no checks on the body are performed.
+
+*Full body example*:
+--------------------------------------------------------------------------------
+<monitor i3wm website>
+    plugin = http
+    url    = "http://www.i3wm.org/"
+
+    # Check for the intro text.
+    body   = "/tiling window manager/"
+
+    # Check for version 4.x in the page.
+    body   = <<EOT
+/4.\d<\/span>/
+EOT
+</monitor>
+
+<monitor i3wm website>
+    plugin = http
+    url    = "http://www.i3wm.org/"
+
+    # Stupid check for the length of the returned page.
+    # Only good for demonstration purposes.
+    # Note how variables need to be escaped because
+    # otherwise they are interpolated.
+    body   = <<EOT
+sub {
+    my (\$body) = @_;
+    return (length(\$body) == 5137);
+}
+EOT
+</monitor>
+--------------------------------------------------------------------------------
 
 === Plugin: smtp
 

@@ -114,7 +114,8 @@ test_plugin(
     'http', $config, 2,
     set({
             'severity' => 'critical',
-            'message'  => re(qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
+            'message'  => re(
+                qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
         },
         {
             'severity' => 'critical',
@@ -161,7 +162,8 @@ test_plugin(
     'http', $config, 2,
     set({
             'severity' => 'critical',
-            'message'  => re(qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
+            'message'  => re(
+                qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
         },
         {
             'severity' => 'critical',
@@ -206,7 +208,8 @@ test_plugin(
     'http', $config, 2,
     set({
             'severity' => 'critical',
-            'message'  => re(qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
+            'message'  => re(
+                qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
         },
         {
             'severity' => 'critical',
@@ -246,6 +249,102 @@ plugin = http
 url = http://$host
 timeout = 1
 EOCONF
+
+test_plugin(
+    'http', $config, 1,
+    set({
+            'severity' => 'critical',
+            'message'  => re(
+                qr#^HTTP reply 595 for http://localhost:[0-9]+ \(::1\)#
+            ),
+        },
+
+    ));
+
+################################################################################
+# Bind to a port,
+# send correct greeting,
+# but error message in body.
+# Verify that the plugin
+# fails with the appropriate error message.
+################################################################################
+
+tcp_server(
+    "127.0.0.1",
+    undef,
+    sub {
+        my ($fh, $host, $port) = @_;
+        syswrite(
+            $fh,
+"HTTP/1.0 200 OK\r\nContent-Length: 24\r\n\r\nFailed to query backend.",
+        );
+        close($fh);
+    },
+    sub {
+        my ($fh, $thishost, $thisport) = @_;
+        $host = "localhost:$thisport";
+        return undef;
+    });
+
+$config = <<EOCONF;
+plugin = http
+url = http://$host
+timeout = 1
+EOCONF
+$config .= <<'EOCONF';
+body = <<EOT
+/Latest release: \d/
+EOT
+EOCONF
+
+test_plugin(
+    'http', $config, 2,
+    set({
+            'severity' => 'critical',
+            'message'  => re(
+qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /Latest release: \\d/#
+            ),
+        },
+        {
+            'severity' => 'critical',
+            'message'  => re(
+                qr#^HTTP reply 595 for http://localhost:[0-9]+ \(::1\)#
+            ),
+        },
+
+    ));
+
+################################################################################
+# Bind to a port,
+# send correct greeting,
+# but error message in body.
+# Verify that the plugin
+# fails with the appropriate error message.
+################################################################################
+
+tcp_server(
+    "127.0.0.1",
+    undef,
+    sub {
+        my ($fh, $host, $port) = @_;
+        syswrite(
+            $fh,
+            "HTTP/1.0 200 OK\r\nContent-Length: 17\r\n\r\nLatest release: 3",
+        );
+        close($fh);
+    },
+    sub {
+        my ($fh, $thishost, $thisport) = @_;
+        $host = "localhost:$thisport";
+        return undef;
+    });
+
+$config = <<EOCONF;
+plugin = http
+url = http://$host
+timeout = 1
+EOCONF
+$config .= q#body = "/Latest release: \\d/"#;
 
 test_plugin(
     'http', $config, 1,
