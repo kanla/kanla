@@ -144,7 +144,7 @@ an C<AnyEvent> timer (timeouts).
 The timeout is initialized
 to the configured value
 (plugin configuration)
-or 10s if left unconfigured.
+or 20s if left unconfigured.
 
 This example connects to one of
 Google's SMTP servers
@@ -170,7 +170,7 @@ but that's not the point of the example:
 sub banner_connect {
     my %args = @_;
 
-    $timeout = ($conf->exists('timeout') ? $conf->value('timeout') : 10);
+    $timeout = ($conf->exists('timeout') ? $conf->value('timeout') : 20);
 
     # Ensure timeout is an int and > 0.
     $timeout += 0;
