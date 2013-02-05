@@ -21,6 +21,14 @@ if (!$conf->is_array('ircd')) {
     @ircds = $conf->array('ircd');
 }
 
+# Unless the user specified something else,
+# we use 45 s instead of the default
+# since IRC uses timeouts
+# e.g. for ident checking.
+if (!$conf->exists('timeout')) {
+    $conf->value('timeout', 45);
+}
+
 sub run {
     for my $ircd (@ircds) {
 
