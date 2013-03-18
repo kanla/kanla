@@ -513,7 +513,7 @@ the POD documentation is intentionally sparse.
 
 =head1 VERSION
 
-Version 1.0
+Version 1.1
 
 =head1 AUTHOR
 
@@ -521,7 +521,7 @@ Michael Stapelberg, C<< <michael at stapelberg.de> >>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2012 Michael Stapelberg.
+Copyright 2012-2013 Michael Stapelberg.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the BSD license.

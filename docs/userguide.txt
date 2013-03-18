@@ -1,7 +1,7 @@
 The kanla User Guide
 ====================
 Michael Stapelberg <michael+kanla@stapelberg.de>
-January 2013
+March 2013
 
 kanla is a daemon which periodically checks
 whether your website, mail server, etc.
