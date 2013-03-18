@@ -64,6 +64,13 @@ my @queued_messages;
 sub plugin_path {
     my ($plugin) = @_;
 
+    # The custom plugin dir
+    # takes precedence.
+    for my $dir (qw(share lib)) {
+        my $path = "/usr/local/$dir/kanla/$plugin";
+        return $path if -e $path;
+    }
+
     my $dist_dir;
     # We eval because
     # dist_dir dies

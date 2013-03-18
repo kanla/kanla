@@ -89,8 +89,20 @@ The Debian packaging serves as reference packaging.
 
 kanla itself should be installed as +/usr/bin/kanla+.
 
-Plugins reside in +/usr/share/perl5/auto/share/dist/kanla/+
-(or whereever your perl installation places dist folders).
+kanla ships with a number of plugins.
+To find the plugin location for your system,
+use:
+
+-----------------------------------------------------------------
+perl -MFile::ShareDir -E 'say File::ShareDir::dist_dir("kanla")'
+-----------------------------------------------------------------
+
+Custom plugins can be placed in
++/usr/local/share/kanla/+ or
++/usr/local/lib/kanla/+,
+depending on whether they are
+binary files or scripts.
+
 A plugin is just an executable file
 (implemented in any language, but preferably Perl)
 which produces output in a certain format on stderr
@@ -105,10 +117,6 @@ This file
 includes every +.cfg+ file in +/etc/kanla/default.d/+
 which is where you will find example configurations
 for every plugin.
-
-//////////////////////////////////////////
-// TODO: where will custom plugins end up?
-//////////////////////////////////////////
 
 == Configuration
 
