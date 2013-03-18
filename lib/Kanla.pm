@@ -76,7 +76,7 @@ sub plugin_path {
     # dist_dir dies
     # when the dir does not exist.
     eval { $dist_dir = dist_dir('kanla'); };
-    if (!$@) {
+    if (defined($dist_dir)) {
         return "$dist_dir/$plugin" if -e "$dist_dir/$plugin";
     }
 
