@@ -33,6 +33,10 @@ our @EXPORT = qw(
 
 our $conf;
 
+# see http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
+our $VERSION = "1.1";
+$VERSION = eval $VERSION;
+
 # This will be set to a true value
 # after initialization is complete,
 # so that multiple callers can
