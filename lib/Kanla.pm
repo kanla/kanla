@@ -35,6 +35,7 @@ use Config::General;
 use JSON::XS;
 
 # core
+use Cwd qw(abs_path);
 use Carp;
 use Data::Dumper;
 use File::Basename qw(basename);
@@ -245,7 +246,7 @@ sub run {
     );
 
     say 'FYI: Configuration was read from the following files:';
-    say "  $_" for $conf->files;
+    say '  ' . abs_path($_) for $conf->files;
 
     # sanity check: are there any plugins configured?
     if (!defined($conf->keys('monitor')) ||
