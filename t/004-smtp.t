@@ -77,7 +77,6 @@ sub test_plugin {
         });
 
     $test_cv->recv;
-    diag(Dumper(\@messages));
     cmp_deeply(\@messages, $expected, 'plugin messages match expectation');
 }
 
