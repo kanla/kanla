@@ -18,7 +18,7 @@ requires 'Config::General' => '2.50';
 requires 'File::ShareDir';
 
 # plugin requirements
-requires 'AnyEvent::HTTP';
+requires 'AnyEvent::HTTP' => '1.5';
 requires 'AnyEvent::Socket';
 requires 'AnyEvent::DNS';
 
