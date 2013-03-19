@@ -9,6 +9,7 @@ use POSIX qw(setsid);
 use Test::MockModule;
 use strict;
 use warnings;
+use AnyEvent::XMPP;
 use Kanla;
 
 setsid();
