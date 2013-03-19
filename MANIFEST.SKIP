@@ -5,3 +5,7 @@
 ^Makefile$
 ^Makefile.old$
 ^kanla-.+\.tar\.gz$
+^_configs/
+pm_to_blib*
+^MYMETA\.yml$
+^MANIFEST\.SKIP$
