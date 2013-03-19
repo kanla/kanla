@@ -1,0 +1,27 @@
+Installing kanla on Debian 7.0 wheezy
+=====================================
+Michael Stapelberg <michael+kanla@stapelberg.de>
+March 2013
+
+This document explains
+how to install kanla
+on Debian 7.0 wheezy.
+
+Note that Debian 6.0 squeeze
+does not contain the necessary dependencies,
+so we do not support it.
+
+Of course
+we are trying
+to get kanla into wheezy-backports ASAP.
+
+The instructions should also work
+for any other deb-based distribution.
+
+== Install the kanla deb
+
+--------------------------------------------------------------
+apt-get install gdebi-core
+wget http://kanla.zekjur.net/downloads/deb/kanla_1.1-1_all.deb
+gdebi kanla_1.1-1_all.deb
+--------------------------------------------------------------

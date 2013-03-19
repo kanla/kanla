@@ -1,0 +1,62 @@
+Installing kanla on Red Hat Enterprise Linux
+============================================
+Michael Stapelberg <michael+kanla@stapelberg.de>
+March 2013
+
+This document explains
+how to install kanla
+on RHEL 6.4.
+
+The instructions should also work
+for any other rpm-based distribution.
+
+== Install EPEL
+
+Many dependencies of kanla
+are available for RHEL
+in the EPEL repository.
+
+Visit
+http://mirror.de.leaseweb.net/epel/6/i386/repoview/epel-release.html
+and install the epel-release rpm.
+
+== Check that kanla is still not available
+
+We are working on
+getting kanla available
+via EPEL.
+
+Despite our best efforts,
+this document might be outdated,
+so run +yum search kanla+
+before continuing.
+
+== Installing dependencies not in EPEL
+
+-----------------------------------------------------------------------------------
+wget http://kanla.zekjur.net/downloads/rpm/perl-AnyEvent-HTTP-2.15-1.el6.noarch.rpm
+wget http://kanla.zekjur.net/downloads/rpm/perl-AnyEvent-XMPP-0.54-2.el6.noarch.rpm
+wget http://kanla.zekjur.net/downloads/rpm/perl-Object-Event-1.23-5.el6.noarch.rpm
+yum install perl-AnyEvent-XMPP-0.54-2.el6.noarch.rpm
+yum install perl-Object-Event-1.23-5.el6.noarch.rpm
+yum install perl-AnyEvent-HTTP-2.15-1.el6.noarch.rpm
+-----------------------------------------------------------------------------------
+
+You can help by
+getting these two packages from Fedora to EPEL :-).
+
+== Install the kanla RPM
+
+---------------------------------------------------------------------
+wget http://kanla.zekjur.net/downloads/rpm/kanla-1.1-2.el6.noarch.rpm
+yum install kanla-1.1-2.el6.noarch.rpm
+---------------------------------------------------------------------
+
+Note that there currently
+is no init script
+in the RPM.
+If you can provide one,
+please go ahead.
+I personally lost motivation
+after realizing the lack
+of start-stop-daemon in RHEL.
