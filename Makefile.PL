@@ -22,6 +22,10 @@ requires 'AnyEvent::HTTP';
 requires 'AnyEvent::Socket';
 requires 'AnyEvent::DNS';
 
+# test requirements
+test_requires 'Test::MockModule';
+test_requires 'Test::Deep';
+
 install_script 'kanla';
 # Install plugins/ into a distribution-shared directory
 install_share('dist', 'plugins');
