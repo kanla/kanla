@@ -82,7 +82,7 @@ sub verify_availability {
         timeout => $timeout,
         headers => {
             # TODO: configurable User-Agent
-            'User-Agent' => 'zkj-monitor',
+            'User-Agent' => 'kanla',
         },
         tcp_connect => sub {
             my (undef, $port, $connect_cb, $prepare_cb) = @_;
