@@ -10,6 +10,7 @@ use Kanla;
 use AnyEvent;
 use Getopt::Long;
 use Pod::Usage;
+use POSIX qw(setsid);
 
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
@@ -28,6 +29,12 @@ GetOptions(
         exit 0;
     },
 );
+
+# Open a new session
+# so that init scripts
+# can kill kanla plus all plugins
+# by using kill -$(pidof kanla)
+setsid();
 
 Kanla::run(
     configfile => $configfile
