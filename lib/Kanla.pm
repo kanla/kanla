@@ -18,7 +18,15 @@ use AnyEvent::XMPP::Ext::Disco;
 use AnyEvent::XMPP::Ext::Ping;
 use AnyEvent::XMPP::Ext::VCard;
 use AnyEvent::XMPP::Ext::Version;
-use AnyEvent::XMPP::Ext::Receipts;
+# ::Receipts was added in AnyEvent::XMPP 0.54.
+# kanla works fine without,
+# but it’s nice to have.
+# Therefore, load it and fall back if that fails.
+my $use_receipts = eval {
+    require AnyEvent::XMPP::Ext::Receipts;
+    AnyEvent::XMPP::Ext::Receipts->import();
+    1;
+};
 
 # libfile-sharedir-perl
 use File::ShareDir qw(dist_dir);
@@ -349,9 +357,13 @@ sub run {
     $xmpp->add_extension($version);
     $disco->enable_feature($version->disco_feature);
 
-    my $receipts =
-        AnyEvent::XMPP::Ext::Receipts->new(disco => $disco, debug => 1);
-    $xmpp->add_extension($receipts);
+    if ($use_receipts) {
+        my $receipts =
+            AnyEvent::XMPP::Ext::Receipts->new(disco => $disco, debug => 1);
+        $xmpp->add_extension($receipts);
+    } else {
+	say STDERR "WARNING: XEP-0184 message receipts are not available because AnyEvent::XMPP is too old.";
+    }
 
     $xmpp->set_presence(undef, 'okay (17:32:00, 2012-10-09)', 11);
 
