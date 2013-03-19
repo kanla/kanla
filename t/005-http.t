@@ -115,12 +115,12 @@ test_plugin(
     set({
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
         },
         {
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 595 for http://localhost:[0-9]+ \(::1\)#
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
             ),
         },
 
@@ -163,12 +163,12 @@ test_plugin(
     set({
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
         },
         {
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 595 for http://localhost:[0-9]+ \(::1\)#
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
             ),
         },
 
@@ -209,12 +209,12 @@ test_plugin(
     set({
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 596 for http://localhost:[0-9]+ \(127.0.0.1\)#),
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
         },
         {
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 595 for http://localhost:[0-9]+ \(::1\)#
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
             ),
         },
 
@@ -255,7 +255,7 @@ test_plugin(
     set({
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 595 for http://localhost:[0-9]+ \(::1\)#
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
             ),
         },
 
@@ -308,7 +308,7 @@ qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /La
         {
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 595 for http://localhost:[0-9]+ \(::1\)#
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
             ),
         },
 
@@ -351,7 +351,7 @@ test_plugin(
     set({
             'severity' => 'critical',
             'message'  => re(
-                qr#^HTTP reply 595 for http://localhost:[0-9]+ \(::1\)#
+                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
             ),
         },
 
