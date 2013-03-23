@@ -298,6 +298,13 @@ sub run {
     my $plugin_cfgs = $conf->obj('monitor');
     for my $name ($conf->keys('monitor')) {
         my $plugin_cfg = $plugin_cfgs->obj($name);
+        if (ref $plugin_cfg eq 'ARRAY') {
+            say STDERR
+                "ERROR: You have two <monitor> blocks with name “$name”.";
+            say STDERR
+"ERROR: This is not supported. Please rename one of the blocks.";
+            exit 1;
+        }
         if (!$plugin_cfg->exists('send_alerts_to')) {
             if (!$sat_global) {
                 say STDERR
@@ -362,7 +369,8 @@ sub run {
             AnyEvent::XMPP::Ext::Receipts->new(disco => $disco, debug => 1);
         $xmpp->add_extension($receipts);
     } else {
-	say STDERR "WARNING: XEP-0184 message receipts are not available because AnyEvent::XMPP is too old.";
+        say STDERR
+"WARNING: XEP-0184 message receipts are not available because AnyEvent::XMPP is too old.";
     }
 
     $xmpp->set_presence(undef, 'okay (17:32:00, 2012-10-09)', 11);
