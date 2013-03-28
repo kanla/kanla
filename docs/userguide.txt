@@ -302,13 +302,14 @@ You can specify this configuration directive multiple times.
 There is no default value for this option,
 therefore *you have to configure this*.
 
-You can use an array for the url parameter:
+You can specify multiple URLs:
 
 *Multiple URL example*:
 --------------------------------------------------------------------------------
 <monitor i3wm website>
     plugin = http
-    url    = [ http://www.i3wm.org/ http://www.i3-wm.org/ ]
+    url    = http://www.i3wm.org/
+    url    = http://www.i3-wm.org/
 </monitor>
 --------------------------------------------------------------------------------
 

@@ -85,36 +85,37 @@ sub import {
             local $/;
             $config_str = <STDIN>;
         }
-        $conf = Config::General->new(
-            -String => $config_str,
 
-            # open all files in utf-8 mode
-            -UTF8 => 1,
+        do {
+            $conf = Config::General->new(
+                -String => $config_str,
 
-            # normalize yes, on, 1, true and no, off, 0, false to 1 resp. 0
-            -AutoTrue => 1,
+                # open all files in utf-8 mode
+                -UTF8 => 1,
 
-            # case-insensitive key names by lowercasing everything
-            -LowerCaseNames => 1,
+                # normalize yes, on, 1, true and no, off, 0, false to 1 resp. 0
+                -AutoTrue => 1,
 
-            # provide the ->array, ->hash, etc. methods
-            -ExtendedAccess => 1,
+                # case-insensitive key names by lowercasing everything
+                -LowerCaseNames => 1,
 
-            # we need to merge duplicate options,
-            # otherwise the default config
-            # will not get overwritten,
-            # but amended.
-            -MergeDuplicateOptions => 1,
-            -FlagBits              => {
-                family => {
-                    ipv4 => 1,
-                    ipv6 => 1,
+                # provide the ->array, ->hash, etc. methods
+                -ExtendedAccess => 1,
+
+                -FlagBits => {
+                    family => {
+                        ipv4 => 1,
+                        ipv6 => 1,
+                    },
                 },
-            },
-            -DefaultConfig => <<'EOT'
+            );
+
+            if (!$conf->exists('family')) {
+                $config_str .= <<'EOT';
 family = ipv4 | ipv6
 EOT
-        );
+            }
+        } until ($conf->exists('family'));
 
         # TODO: parse interval from config
         my $interval = 60;
@@ -132,7 +133,7 @@ EOT
             cb       => \&$run,
         );
 
-	$initialized = 1;
+        $initialized = 1;
     }
 
     @_ = ($class);
