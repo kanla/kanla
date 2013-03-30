@@ -1,4 +1,10 @@
 Revision history for kanla:
 
+1.2     Sat, 30 Mar 2013 12:26:46 +0100
+	- Improve error message when having two <monitor> blocks with the same
+	  name
+	- Switch from MergeDuplicateOptions to manually adding defaults. This
+	  fixes specifying multiple URLs.
+
 1.1	Tue, 19 Mar 2013 15:39:00 +0100
         - Initial release.
