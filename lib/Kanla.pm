@@ -49,7 +49,7 @@ use Data::Dumper;
 use File::Basename qw(basename);
 
 # see http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
-our $VERSION = "1.1";
+our $VERSION = "1.2";
 $VERSION = eval $VERSION;
 
 binmode STDOUT, ':utf8';
@@ -533,7 +533,7 @@ the POD documentation is intentionally sparse.
 
 =head1 VERSION
 
-Version 1.1
+Version 1.2
 
 =head1 AUTHOR
 

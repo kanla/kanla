@@ -28,7 +28,7 @@ our @EXPORT = qw(
 );
 
 # see http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
-our $VERSION = "1.1";
+our $VERSION = "1.2";
 $VERSION = eval $VERSION;
 
 # Filled in banner_connect().
