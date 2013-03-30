@@ -323,7 +323,7 @@ sub run {
     # easier to send to a bare JID, we also need full JIDs for message receipts.
     my $queued_timer;
 
-    $xmpp = AnyEvent::XMPP::Client->new(debug => 1);
+    $xmpp = AnyEvent::XMPP::Client->new();
 
     my @accounts;
     if (!$conf->is_array('jabber')) {
