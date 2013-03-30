@@ -48,8 +48,8 @@ getting these two packages from Fedora to EPEL :-).
 == Install the kanla RPM
 
 ---------------------------------------------------------------------
-wget http://kanla.zekjur.net/downloads/rpm/kanla-1.1-2.el6.noarch.rpm
-yum install kanla-1.1-2.el6.noarch.rpm
+wget http://kanla.zekjur.net/downloads/rpm/kanla-1.2-1.el6.noarch.rpm
+yum install kanla-1.2-1.el6.noarch.rpm
 ---------------------------------------------------------------------
 
 Note that there currently

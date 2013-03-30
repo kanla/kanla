@@ -22,6 +22,6 @@ for any other deb-based distribution.
 
 --------------------------------------------------------------
 apt-get install gdebi-core
-wget http://kanla.zekjur.net/downloads/deb/kanla_1.1-1_all.deb
-gdebi kanla_1.1-1_all.deb
+wget http://kanla.zekjur.net/downloads/deb/kanla_1.2-1_all.deb
+gdebi kanla_1.2-1_all.deb
 --------------------------------------------------------------
