@@ -112,6 +112,7 @@ sub import {
 
             if (!$conf->exists('family')) {
                 $config_str .= <<'EOT';
+
 family = ipv4 | ipv6
 EOT
             }
