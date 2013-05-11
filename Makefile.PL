@@ -64,8 +64,8 @@ install_vendor:: extra_install
 extra_install:
 	install -d $(DESTDIR)/etc/kanla
 	install -d $(DESTDIR)/etc/kanla/default.d
-	install -m 644 default.cfg $(DESTDIR)/etc/kanla/default.cfg
-	install -m 644 default.d/* $(DESTDIR)/etc/kanla/default.d/
+	install -m 640 default.cfg $(DESTDIR)/etc/kanla/default.cfg
+	install -m 640 default.d/* $(DESTDIR)/etc/kanla/default.d/
 END_OF_MAKEFILE
 
 WriteAll;
