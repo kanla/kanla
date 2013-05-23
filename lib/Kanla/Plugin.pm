@@ -34,7 +34,7 @@ our @EXPORT = qw(
 our $conf;
 
 # see http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
-our $VERSION = "1.2";
+our $VERSION = "1.3";
 $VERSION = eval $VERSION;
 
 # This will be set to a true value

@@ -1,5 +1,11 @@
 Revision history for kanla:
 
+1.3     Thu, 23 May 2013 19:57:28 +0200
+	- remove debug => 1 to remove errors when XML::Twig is missing
+	- add "fail" plugin to the default config
+	- install configfiles with permission 640
+	- use kanla@example.invalid instead of example.com in the default config
+
 1.2     Sat, 30 Mar 2013 12:26:46 +0100
 	- Improve error message when having two <monitor> blocks with the same
 	  name
