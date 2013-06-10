@@ -123,15 +123,17 @@ EOT
 
         # Periodically run the check, but don’t wait for the first $interval seconds to
         # pass, but run it right now, too.
-        my $run;
-        {
-            no strict 'refs';
-            $run = *{ $pkg . "::run" };
-        }
+        my $run; $run = sub {
+            # XXX ->can also resolves in @ISA
+            die 'plugins must implement "sub run"'
+                unless $run = $pkg->can("run");
+
+            goto $run;
+        };
         $main_timer = AnyEvent->timer(
             after    => 0,
             interval => $interval,
-            cb       => \&$run,
+            cb       => $run,
         );
 
         $initialized = 1;
