@@ -1,0 +1,112 @@
+Contributing to kanla
+=====================
+Michael Stapelberg <michael+kanla@stapelberg.de>
+March 2013
+
+Thank you for your interest in
+contributing to kanla.
+
+== Ways to contribute
+
+1. Package kanla for your distribution.
+By creating and/or maintaining a package
+for your operating system of choice,
+you are helping kanla
+and the users of your operating system.
+We believe that using the existing infrastructure
+is much better than people installing software
+from third parties.
+
+2. Send a well-written, detailed bug report.
+When you notice a bug,
+chances are that other people ran into it, too,
+or will run into it in the future.
+Many people don’t bother to report bugs, though.
+By sending a good bug report,
+you are thereby doing all users
+who are affected by this bug
+a big favor.
+
+3. Send a documentation fix/improvement.
+Software is only as useful
+as its documentation
+(unless you like reading the source).
+Since one of kanla’s focus points
+is good documentation,
+improvements (making things more clear or
+easier to understand)
+and corrections
+are always very welcome.
+
+4. Send a patch.
+Of course,
+as with all FOSS software,
+we appreciate patches.
+In case you are fixing a bug,
+please let others know
+what bug you are working on
+by posting a short message
+in the corresponding bug report.
+In case you are implementing a feature,
+please check back with us
+whether the feature makes sense
+and fits kanla’s philosophy
+before you spend any time on it.
+
+== Patches
+
+=== Getting the source
+
+Our source code lives in a git repository.
+The "master" branch
+(what you get when just cloning the repository)
+is intended to be always stable
+and this is where you should develop.
+
+You can clone the git repository using
++git clone git://github.com/kanla/kanla.git+
+
+=== Coding standard
+
+To ensure that kanla is formatted
+in a consistent way,
+we use perltidy,
+a program to automatically format Perl source code.
+
+To enable a quick and fruitful code review,
+please use perltidy on your code
+before submitting your patch.
+
+/////////////////////////////////////////////////
+TODO: sollen wir diesen hook nutzen?
+https://github.com/mlawren/githook-perltidy
+////////////////////////////////////////////////
+
+=== Testsuite
+
+To ensure that code changes don’t (re-)introduce bugs,
+we have a testsuite,
+which you should run periodically while developing
+(using +make test+).
+
+In case you are implementing a new feature,
+a testcase for this feature
+is very welcome
+(but currently not a hard requirement).
+Be aware though,
+that unless the feature is very hard to test,
+it will not be committed without a testcase.
+This means that when you don’t write a testcase,
+someone else will have to.
+So to get your feature merged quickly,
+it would be best if you could write the testcase.
+
+=== Sending your changes
+
+Please send a pull request on github
+in order to get your changes
+merged into the official kanla source tree.
+
+////////////////////////////////////////////////////
+TODO: mailing liste einrichten
+///////////////////////////////////////////////////
