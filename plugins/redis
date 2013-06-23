@@ -1,0 +1,43 @@
+#!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab
+
+use lib qw(lib);
+use Kanla::Plugin;
+use Kanla::Plugin::Banner;
+
+my @hosts;
+if (!$conf->is_array('host')) {
+    @hosts = ($conf->value('host'));
+} else {
+    @hosts = $conf->array('host');
+}
+
+sub run {
+    for my $host (@hosts) {
+        banner_connect(
+            host            => $host,
+            default_service => 6379,
+            cb              => sub {
+                my ($handle, $timeout, $ip, $service) = @_;
+
+                my $ping_line = "*1\r\n\$4\r\nPING\r\n";
+                $handle->push_write($ping_line);
+                $handle->push_read(
+                    line => sub {
+                        my ($handle, $line) = @_;
+
+                        if ($line ne "+PONG") {
+                            signal_error(
+                                'critical',
+"Protocol error on [$ip]:$service: expected +PONG, got \'" .  $line . '\''
+                             );
+                        }
+
+                        # cancel timeout
+                        undef $timeout;
+                        banner_disconnect($handle);
+                    });
+            });
+
+    }
+}

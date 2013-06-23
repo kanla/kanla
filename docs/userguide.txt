@@ -549,6 +549,38 @@ See <<http-family>>.
 
 See <<smtp-timeout>>.
 
+=== Plugin: redis
+
+The redis plugin periodically connects to a redis server
+and sends alerts
+if the server does not respond to a PING command (with `+PONG`)
+or anything else went wrong on the DNS/TCP level.
+
+==== Host
+
+The host (may include a port)
+of the redis server to check.
+Every syntax which
+https://metacpan.org/module/AnyEvent::Socket[AnyEvent::Socket]’s
+parse_hostport function understands is accepted
+(this covers all common IPv4 and IPv6 formats).
+
+You can specify this configuration directive multiple times.
+
+*Full Host example*:
+--------------------------------------------------------------------------------
+<monitor my redis>
+    plugin = redis
+    host   = localhost:6379
+</monitor>
+--------------------------------------------------------------------------------
+
+==== Family
+
+See <<http-family>>.
+Make sure to use `family = ipv4` here
+as long as redis does not support IPv6.
+
 == Config recipes
 
 === Variables
