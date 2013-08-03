@@ -138,6 +138,15 @@ without being bothered by config file conflicts on upgrades.
 It goes without saying that configuration files are encoded as UTF-8
 and UTF-8 is supported throughout kanla.
 
+[NOTE]
+SysVinit will not directly report error messages
+when (re)starting kanla.
+Ensure kanla is running
+by checking +service kanla status+
+and/or look at
++/var/log/kanla.log+
+for error messages
+
 === Quick example
 
 *A minimum useful kanla configuration*:
