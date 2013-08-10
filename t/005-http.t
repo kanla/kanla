@@ -80,6 +80,16 @@ sub test_plugin {
     cmp_deeply(\@messages, $expected, 'plugin messages match expectation');
 }
 
+my $check_ipv4_fail = {
+    'severity' => 'critical',
+    'message' =>
+        re(qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
+};
+my $check_ipv6_fail = {
+    'severity' => 'critical',
+    'message'  => re(qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#),
+};
+
 ################################################################################
 # Bind to a port,
 # but immediately close incoming connections.
@@ -109,21 +119,7 @@ url = http://$host
 timeout = 1
 EOCONF
 
-test_plugin(
-    'http', $config, 2,
-    set({
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
-        },
-        {
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
-            ),
-        },
-
-    ));
+test_plugin('http', $config, 2, set($check_ipv4_fail, $check_ipv6_fail));
 
 ################################################################################
 # Bind to a port,
@@ -159,19 +155,7 @@ EOCONF
 
 test_plugin(
     'http', $config, 2,
-    set({
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
-        },
-        {
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
-            ),
-        },
-
-    ));
+    set($check_ipv4_fail, $check_ipv6_fail));
 
 ################################################################################
 # Bind to a port,
@@ -203,21 +187,7 @@ url = http://$host
 timeout = 1
 EOCONF
 
-test_plugin(
-    'http', $config, 2,
-    set({
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
-        },
-        {
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
-            ),
-        },
-
-    ));
+test_plugin('http', $config, 2, set($check_ipv4_fail, $check_ipv6_fail));
 
 ################################################################################
 # Bind to a port,
@@ -249,16 +219,7 @@ url = http://$host
 timeout = 1
 EOCONF
 
-test_plugin(
-    'http', $config, 1,
-    set({
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
-            ),
-        },
-
-    ));
+test_plugin('http', $config, 1, set($check_ipv6_fail));
 
 ################################################################################
 # Bind to a port,
@@ -304,13 +265,8 @@ test_plugin(
 qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /Latest release: \\d/#
             ),
         },
-        {
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
-            ),
-        },
 
+        $check_ipv6_fail,
     ));
 
 ################################################################################
@@ -345,16 +301,7 @@ timeout = 1
 EOCONF
 $config .= q#body = "/Latest release: \\d/"#;
 
-test_plugin(
-    'http', $config, 1,
-    set({
-            'severity' => 'critical',
-            'message'  => re(
-                qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#
-            ),
-        },
-
-    ));
+test_plugin('http', $config, 1, set($check_ipv6_fail));
 
 done_testing;
 
