@@ -32,7 +32,7 @@ sub parse_url {
         $url =~ m|^([^:]+):(?://([^/?#]*))?([^?#]*)(\?[^#]*)?(#.*)?$|;
 
     my ($user_pass, $hostname, $port) =
-        $uauthority =~ /^( .*\@ )? ([^\@:]+) ( : (\d+) )?$/x or
+        $uauthority =~ /^(?: (.*)\@ )? ([^\@:]+) ( : (\d+) )?$/x or
         die "Unparsable URL";
 
     $query    //= '';
