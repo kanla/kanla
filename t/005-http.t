@@ -104,6 +104,26 @@ sub serve {
     return $host;
 }
 
+sub serve_and_close_connections {
+    my $host;
+
+    tcp_server(
+        "127.0.0.1",
+        undef,
+        sub {
+            my ($fh, $host, $port) = @_;
+            shutdown($fh, 2);
+            close($fh);
+        },
+        sub {
+            my ($fh, $thishost, $thisport) = @_;
+            $host = "localhost:$thisport";
+            return undef;
+        });
+
+    return $host;
+}
+
 my $check_ipv4_fail = {
     'severity' => 'critical',
     'message' =>
@@ -121,21 +141,7 @@ my $check_ipv6_fail = {
 # with the appropriate message.
 ################################################################################
 
-my $host;
-
-tcp_server(
-    "127.0.0.1",
-    undef,
-    sub {
-        my ($fh, $host, $port) = @_;
-        shutdown($fh, 2);
-        close($fh);
-    },
-    sub {
-        my ($fh, $thishost, $thisport) = @_;
-        $host = "localhost:$thisport";
-        return undef;
-    });
+my $host = serve_and_close_connections();
 
 my $config = <<EOCONF;
 plugin = http
@@ -267,6 +273,23 @@ EOCONF
 $config .= q#body = "/Latest release: \\d/"#;
 
 test_plugin('http', $config, 1, set($check_ipv6_fail));
+
+################################################################################
+# Bind to a port,
+# but immediately close incoming connections.
+# Verify that the plugin
+# removes username and password from error messages.
+################################################################################
+
+$host = serve_and_close_connections();
+
+$config = <<EOCONF;
+plugin = http
+url = http://Sending:ClearTextPasswordsNOW\@$host
+timeout = 1
+EOCONF
+
+test_plugin('http', $config, 2, set($check_ipv4_fail, $check_ipv6_fail));
 
 done_testing;
 
