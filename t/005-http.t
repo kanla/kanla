@@ -316,9 +316,9 @@ qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /La
 ################################################################################
 # Bind to a port,
 # send correct greeting,
-# but error message in body.
+# and correct message in body.
 # Verify that the plugin
-# fails with the appropriate error message.
+# does not fail.
 ################################################################################
 
 tcp_server(
