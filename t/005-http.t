@@ -124,6 +124,50 @@ sub serve_and_close_connections {
     return $host;
 }
 
+sub serve_with_basic_authentication {
+    my $host;
+    tcp_server(
+        "127.0.0.1",
+        undef,
+        sub {
+            my ($fh, $host, $port) = @_;
+            my $handle;
+            $handle = AnyEvent::Handle->new(
+                fh     => $fh,
+                on_eof => sub {
+                    $handle->destroy;
+                });
+
+            $handle->push_read(
+                line => "\015\012\015\012",
+                sub {
+                    my ($handle, $headers) = @_;
+                    # i.e. ilove:kanla
+                    if ($headers =~ /Authorization: Basic aWxvdmU6a2FubGE=/) {
+                        $handle->push_write(
+"HTTP/1.0 200 OK\r\nContent-Length: 16\r\n\r\nYes, yes you do."
+                        );
+                    } else {
+                        $handle->push_write(
+"HTTP/1.0 401 Unauthorized\r\nContent-Length: 19\r\n\r\nYou are not worthy."
+                        );
+                    }
+                });
+        },
+        sub {
+            my ($fh, $thishost, $thisport) = @_;
+            $host = "localhost:$thisport";
+            return undef;
+        });
+
+    return $host;
+}
+
+my $check_ipv4_unauthorized = {
+    'severity' => 'critical',
+    'message' =>
+        re(qr#^HTTP reply 401 for http://localhost:[0-9]+ \(127.0.0.1\)#),
+};
 my $check_ipv4_fail = {
     'severity' => 'critical',
     'message' =>
@@ -183,9 +227,7 @@ url = http://$host
 timeout = 1
 EOCONF
 
-test_plugin(
-    'http', $config, 2,
-    set($check_ipv4_fail, $check_ipv6_fail));
+test_plugin('http', $config, 2, set($check_ipv4_fail, $check_ipv6_fail));
 
 ################################################################################
 # Bind to a port,
@@ -290,6 +332,42 @@ timeout = 1
 EOCONF
 
 test_plugin('http', $config, 2, set($check_ipv4_fail, $check_ipv6_fail));
+
+################################################################################
+# Bind to a port,
+# and check http basic authorization header.
+# Verify that the plugin
+# does not fail with valid credentials.
+################################################################################
+
+$host = serve_with_basic_authentication();
+
+$config = <<EOCONF;
+plugin = http
+url = http://ilove:kanla\@$host
+timeout = 1
+EOCONF
+$config .= q#body = "/Yes, yes you do\./"#;
+
+test_plugin('http', $config, 1, set($check_ipv6_fail));
+
+################################################################################
+# Bind to a port,
+# and check http basic authorization header.
+# Verify that the plugin
+# fails with incorrect credentials.
+################################################################################
+
+$host = serve_with_basic_authentication();
+
+$config = <<EOCONF;
+plugin = http
+url = http://idislike:kanla\@$host
+timeout = 1
+EOCONF
+
+test_plugin('http', $config, 2,
+    set($check_ipv4_unauthorized, $check_ipv6_fail));
 
 done_testing;
 
