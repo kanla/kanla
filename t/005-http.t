@@ -80,6 +80,30 @@ sub test_plugin {
     cmp_deeply(\@messages, $expected, 'plugin messages match expectation');
 }
 
+sub serve {
+    my ($content) = @_;
+    my $host;
+
+    tcp_server(
+        "127.0.0.1",
+        undef,
+        sub {
+            my ($fh, $host, $port) = @_;
+            syswrite(
+                $fh,
+                $content,
+            );
+            close($fh);
+        },
+        sub {
+            my ($fh, $thishost, $thisport) = @_;
+            $host = "localhost:$thisport";
+            return undef;
+        });
+
+    return $host;
+}
+
 my $check_ipv4_fail = {
     'severity' => 'critical',
     'message' =>
@@ -164,22 +188,7 @@ test_plugin(
 # with the appropriate message.
 ################################################################################
 
-tcp_server(
-    "127.0.0.1",
-    undef,
-    sub {
-        my ($fh, $host, $port) = @_;
-        syswrite(
-            $fh,
-            "PROPRIETARY SERVICE READY. SEND CLEARTEXT PASSWORDS NOW!\r\n"
-        );
-        close($fh);
-    },
-    sub {
-        my ($fh, $thishost, $thisport) = @_;
-        $host = "localhost:$thisport";
-        return undef;
-    });
+$host = serve("PROPRIETARY SERVICE READY. SEND CLEARTEXT PASSWORDS NOW!\r\n");
 
 $config = <<EOCONF;
 plugin = http
@@ -196,22 +205,7 @@ test_plugin('http', $config, 2, set($check_ipv4_fail, $check_ipv6_fail));
 # does not fail.
 ################################################################################
 
-tcp_server(
-    "127.0.0.1",
-    undef,
-    sub {
-        my ($fh, $host, $port) = @_;
-        syswrite(
-            $fh,
-            "HTTP/1.0 200 OK\r\nContent-Length: 0\r\n\r\n",
-        );
-        close($fh);
-    },
-    sub {
-        my ($fh, $thishost, $thisport) = @_;
-        $host = "localhost:$thisport";
-        return undef;
-    });
+$host = serve("HTTP/1.0 200 OK\r\nContent-Length: 0\r\n\r\n");
 
 $config = <<EOCONF;
 plugin = http
@@ -229,22 +223,8 @@ test_plugin('http', $config, 1, set($check_ipv6_fail));
 # fails with the appropriate error message.
 ################################################################################
 
-tcp_server(
-    "127.0.0.1",
-    undef,
-    sub {
-        my ($fh, $host, $port) = @_;
-        syswrite(
-            $fh,
-"HTTP/1.0 200 OK\r\nContent-Length: 24\r\n\r\nFailed to query backend.",
-        );
-        close($fh);
-    },
-    sub {
-        my ($fh, $thishost, $thisport) = @_;
-        $host = "localhost:$thisport";
-        return undef;
-    });
+$host = serve(
+    "HTTP/1.0 200 OK\r\nContent-Length: 24\r\n\r\nFailed to query backend.");
 
 $config = <<EOCONF;
 plugin = http
@@ -277,22 +257,7 @@ qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /La
 # fails with the appropriate error message.
 ################################################################################
 
-tcp_server(
-    "127.0.0.1",
-    undef,
-    sub {
-        my ($fh, $host, $port) = @_;
-        syswrite(
-            $fh,
-            "HTTP/1.0 200 OK\r\nContent-Length: 17\r\n\r\nLatest release: 3",
-        );
-        close($fh);
-    },
-    sub {
-        my ($fh, $thishost, $thisport) = @_;
-        $host = "localhost:$thisport";
-        return undef;
-    });
+$host = serve("HTTP/1.0 200 OK\r\nContent-Length: 17\r\n\r\nLatest release: 3");
 
 $config = <<EOCONF;
 plugin = http
