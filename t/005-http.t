@@ -355,6 +355,35 @@ test_plugin('http', $config, 1, set($check_ipv6_fail));
 # Bind to a port,
 # and check http basic authorization header.
 # Verify that the plugin
+# successfully logs in with valid credentials
+# and fails with the appropriate error message.
+################################################################################
+
+$host = serve_with_basic_authentication();
+
+$config = <<EOCONF;
+plugin = http
+url = http://ilove:kanla\@$host
+timeout = 1
+EOCONF
+$config .= q#body = "/this regex should fail/"#;
+
+test_plugin(
+    'http', $config, 2,
+    set({
+            'severity' => 'critical',
+            'message'  => re(
+qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /this regex should fail/#
+            ),
+        },
+
+        $check_ipv6_fail
+    ));
+
+################################################################################
+# Bind to a port,
+# and check http basic authorization header.
+# Verify that the plugin
 # fails with incorrect credentials.
 ################################################################################
 
