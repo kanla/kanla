@@ -33,13 +33,13 @@ sub parse_url {
 
     my ($uscheme, $uauthority, $upath, $query, $fragment) =
         $url =~ m|^
-            ([^:]+):     # scheme
-            (?://        # // is used in http
-              ([^/?\#]*) # user, pass, hostname, port
+            ([^:]+):       # scheme
+            (?://          # // is used in http
+                ([^/?\#]*) # user, pass, hostname, port
             )?
-            ([^?\#]*)    # path
-            (\?[^\#]*)?  # query
-            (\#.*)?      # fragment
+            ([^?\#]*)      # path
+            (\?[^\#]*)?    # query
+            (\#.*)?        # fragment
             $|x;
 
     my ($user_pass, $hostname, $port) =
