@@ -35,11 +35,11 @@ sub parse_url {
         $url =~ m|^
             ([^:]+):     # scheme
             (?://        # // is used in http
-              ([^/?#]*)  # user, pass, hostname, port
+              ([^/?\#]*) # user, pass, hostname, port
             )?
-            ([^?#]*)     # path
-            (\?[^#]*)?   # query
-            (#.*)?       # fragment
+            ([^?\#]*)    # path
+            (\?[^\#]*)?  # query
+            (\#.*)?      # fragment
             $|x;
 
     my ($user_pass, $hostname, $port) =
