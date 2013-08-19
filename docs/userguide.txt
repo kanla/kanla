@@ -297,6 +297,11 @@ or anything else went wrong during retrieval.
 The URL of the site to retrieve.
 This can be anything which the
 http://metacpan.org/module/AnyEvent::HTTP[AnyEvent::HTTP] module accepts.
+In addition
+it allows to embed username and password
+for HTTP basic access authentication.
+The http://tools.ietf.org/html/rfc3986#section-3.2[standard URI syntax] is used,
+e.g. +http://user:pass@www.i3wm.org/+.
 
 You can specify this configuration directive multiple times.
 
