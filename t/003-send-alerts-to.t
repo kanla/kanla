@@ -39,7 +39,7 @@ sub test_send_alerts_to {
         'send_message',
         sub {
             my ($self, $jid, $type, $unused, %args) = @_;
-            ok($jid ~~ @$expected, 'JID expected');
+            ok((scalar grep { $_ eq $jid } @$expected) > 0, 'JID expected');
             @$expected = grep { $_ ne $jid } @$expected;
             is(
                 $args{body},

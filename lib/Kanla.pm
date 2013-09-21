@@ -437,7 +437,7 @@ sub run {
 
             # Ignore subscription requests from people who are not in
             # @all_jids.
-            return unless ($contact->jid ~~ @all_jids);
+            return unless (scalar grep { $_ eq $contact->jid } @all_jids) > 0;
 
             # Acknowledge everything else.
             say "Acknowledging subscription request from " . $contact->jid;
