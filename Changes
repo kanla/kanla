@@ -1,5 +1,11 @@
 Revision history for kanla:
 
+1.4     Fri, 25 Oct 2013 17:49:59 +0200
+        - make Kanla::Plugin work reliably with newer Perl versions
+	- add redis plugin
+	- http plugin: implement basic auth
+	- avoid using smartmatch since it is experimental in Perl ≥ 5.18
+
 1.3     Thu, 23 May 2013 19:57:28 +0200
 	- remove debug => 1 to remove errors when XML::Twig is missing
 	- add "fail" plugin to the default config
