@@ -118,8 +118,11 @@ EOT
             }
         } until ($conf->exists('family'));
 
-        # TODO: parse interval from config
-        my $interval = 60;
+        my $interval = ($conf->exists('interval') ? $conf->value('interval') : 60);
+
+        # Ensure timeout is an int and > 0.
+        $interval += 0;
+        $interval ||= 1;
 
         # Periodically run the check, but don’t wait for the first $interval seconds to
         # pass, but run it right now, too.
