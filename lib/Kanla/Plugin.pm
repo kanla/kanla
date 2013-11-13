@@ -49,11 +49,17 @@ my $errorfh;
 my $main_timer;
 
 sub signal_error {
-    my ($severity, $message) = @_;
-    say $errorfh encode_json({
-            severity => $severity,
-            message  => $message
-    });
+    my ($severity, $message, $id) = @_;
+    my $json = {
+        severity => $severity,
+        message  => $message
+    };
+
+    if (defined($id) && $id ne '') {
+        $json->{id} = $id;
+    }
+
+    say $errorfh encode_json($json);
 }
 
 sub import {
@@ -118,7 +124,8 @@ EOT
             }
         } until ($conf->exists('family'));
 
-        my $interval = ($conf->exists('interval') ? $conf->value('interval') : 60);
+        my $interval =
+            ($conf->exists('interval') ? $conf->value('interval') : 60);
 
         # Ensure timeout is an int and > 0.
         $interval += 0;
@@ -126,7 +133,8 @@ EOT
 
         # Periodically run the check, but don’t wait for the first $interval seconds to
         # pass, but run it right now, too.
-        my $run; $run = sub {
+        my $run;
+        $run = sub {
             # XXX ->can also resolves in @ISA
             die 'plugins must implement "sub run"'
                 unless $run = $pkg->can("run");

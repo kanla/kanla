@@ -17,6 +17,7 @@ use Kanla::Plugin::Banner;
 sub run {
     signal_error(
         'critical',
-'Hello, this is the "fail" plugin. If you read this message, your setup seems to be working :-).'
+'Hello, this is the "fail" plugin. If you read this message, your setup seems to be working :-).',
+        'fail',
     );
 }

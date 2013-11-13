@@ -264,6 +264,49 @@ with a non-google account.
 // TODO: are full jids okay?
 //////////////////////////////
 
+==== consecutive_failures
+
+[[consecutive_failures]]
+
+Sometimes,
+the problem detected by a plugin
+is transient.
+As an example,
+maybe the IRC plugin tries to connect
+in precisely the same moment
+in which 5 other connections are made
+and thus the server’s listen queue is full.
+The next check will succeed
+and there was only a brief interruption of service
+from your user’s point of view,
+if at all.
+Human intervention is not necessary,
+so it would be good
+if the human can stay out of the loop entirely.
+
+When setting consecutive_failures
+to any value higher than 1 (the default),
+kanla will inhibit delivering the plugin’s messages
+until that specific failure has occurred
++$consecutive_failures+ times.
+
+Uniquely identifying a specific failure
+is the responsibility of the plugin,
+see <<example_alert_output>>.
+
+*consecutive_failures example*:
+--------------------------------------------------------------------------------
+consecutive_failures = 2
+
+<monitor i3wm website>
+    plugin   = http
+    url      = "http://www.i3wm.org/"
+    # Effectively notifies me once www.i3wm.org
+    # is down for at least 60 seconds.
+    interval = 30
+</monitor>
+--------------------------------------------------------------------------------
+
 === Plugin configuration
 
 There are some configuration directives which are valid for every plugin.
@@ -782,9 +825,11 @@ regular expressions should work fine.
 
 ==== Example alert output
 
+[[example_alert_output]]
+
 Each message is represented by a JSON hash.
 Currently,
-only two keys are defined:
+only three keys are defined:
 
 severity::
 The severity of the message.
@@ -795,11 +840,22 @@ which will be sent to
 the configured send_alerts_to destination.
 Make this as helpful as possible,
 but keep it as verbose as necessary.
+id::
+A unique id
+for this specific problem.
+Used in order to suppress messages
+unless the problem persists.
+Should start with
+the plugin name,
+e.g.
+http.404.http://i3wm.org/
+
 
 *Example alert JSON output*:
 -------------------------------------------
 {
  "severity": "critical",
- "message": "This will be sent via Jabber"
+ "message": "This will be sent via Jabber",
+ "id": "doc.userguide.example"
 }
 -------------------------------------------

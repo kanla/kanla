@@ -141,7 +141,7 @@ sub start_plugin {
     @start_request = (
         json => sub {
             my ($hdl, $hashref) = @_;
-            handle_stderr_msg(basename($plugin), \@dest, $hashref);
+            handle_stderr_msg($name, basename($plugin), \@dest, $hashref);
             $hdl->push_read(@start_request);
         });
 
@@ -168,8 +168,25 @@ sub start_plugin {
 sub xmpp_empty_queue {
     my @leftover;
 
+    my $consecutive_failures = (
+        $conf->exists('consecutive_failures') ?
+            $conf->value('consecutive_failures') :
+            0
+    );
+
+    my %counts;
     for my $entry (@queued_messages) {
         my ($jid, $message) = @$entry;
+        $counts{ $message->{failure_id} }++;
+    }
+
+    for my $entry (@queued_messages) {
+        my ($jid, $message) = @$entry;
+
+        if ($counts{ $message->{failure_id} } < $consecutive_failures) {
+            push @leftover, $entry unless $message->{expiration} < time();
+            next;
+        }
 
         # Find the account,
         # if unsuccessful,
@@ -195,15 +212,14 @@ sub xmpp_empty_queue {
             $presence->jid,
             'chat',
             undef,
-            body => $message
-        );
+            body => $message->{body});
     }
 
     @queued_messages = @leftover;
 }
 
 sub handle_stderr_msg {
-    my ($module, $dest, $data) = @_;
+    my ($name, $module, $dest, $data) = @_;
     if (!exists($data->{severity}) ||
         !exists($data->{message})) {
         say STDERR
@@ -211,10 +227,22 @@ sub handle_stderr_msg {
         return;
     }
 
+    my $module_config = $conf->obj('monitor')->obj($name);
+    my $interval      = 60;
+    if ($module_config->exists('interval')) {
+        $interval = $module_config->value('interval');
+    }
+
     if ($data->{severity} eq 'critical') {
         say "relaying: " . $data->{message};
+        my $message = {
+            body       => $data->{message},
+            expiration => time() + $interval,
+            failure_id => $data->{id} // $data->{message},
+        };
+
         for my $jid (@$dest) {
-            push @queued_messages, [ $jid, $data->{message} ];
+            push @queued_messages, [ $jid, $message ];
         }
         xmpp_empty_queue();
     }
