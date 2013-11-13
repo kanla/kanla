@@ -77,7 +77,11 @@ sub test_plugin {
         });
 
     $test_cv->recv;
-    cmp_deeply(\@messages, $expected, 'plugin messages match expectation');
+    if (!cmp_deeply(\@messages, $expected, 'plugin messages match expectation'))
+    {
+        diag('messages = ' . Dumper(\@messages));
+        diag('expected = ' . Dumper($expected));
+    }
 }
 
 sub serve {
@@ -167,15 +171,18 @@ my $check_ipv4_unauthorized = {
     'severity' => 'critical',
     'message' =>
         re(qr#^HTTP reply 401 for http://localhost:[0-9]+ \(127.0.0.1\)#),
+    'id' => ignore(),
 };
 my $check_ipv4_fail = {
     'severity' => 'critical',
     'message' =>
         re(qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
+    'id' => ignore(),
 };
 my $check_ipv6_fail = {
     'severity' => 'critical',
     'message'  => re(qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#),
+    'id'       => ignore(),
 };
 
 ################################################################################
@@ -290,8 +297,9 @@ test_plugin(
     set({
             'severity' => 'critical',
             'message'  => re(
-qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /Latest release: \\d/#
+qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /Latest release: \\d/#,
             ),
+            'id' => ignore(),
         },
 
         $check_ipv6_fail,
@@ -373,8 +381,9 @@ test_plugin(
     set({
             'severity' => 'critical',
             'message'  => re(
-qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /this regex should fail/#
+qr#^HTTP body of http://localhost:[0-9]+ \(127.0.0.1\) does not match regexp /this regex should fail/#,
             ),
+            'id' => ignore(),
         },
 
         $check_ipv6_fail
@@ -395,7 +404,8 @@ url = http://idislike:kanla\@$host
 timeout = 1
 EOCONF
 
-test_plugin('http', $config, 2,
+test_plugin(
+    'http', $config, 2,
     set($check_ipv4_unauthorized, $check_ipv6_fail));
 
 done_testing;

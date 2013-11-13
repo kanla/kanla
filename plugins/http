@@ -31,8 +31,7 @@ use MIME::Base64;
 sub parse_url {
     my ($url) = @_;
 
-    my ($uscheme, $uauthority, $upath, $query, $fragment) =
-        $url =~ m|^
+    my ($uscheme, $uauthority, $upath, $query, $fragment) = $url =~ m|^
             ([^:]+):       # scheme
             (?://          # // is used in http
                 ([^/?\#]*) # user, pass, hostname, port
@@ -127,8 +126,8 @@ sub verify_availability {
             if ($hdr->{Status} =~ /^[4-5]/) {
                 signal_error(
                     'critical',
-                    'HTTP reply ' . $hdr->{Status} . " for $clean_url ($ip)"
-                );
+                    'HTTP reply ' . $hdr->{Status} . " for $clean_url ($ip)",
+                    'http.' . $url . '.' . $hdr->{Status});
                 return;
             }
 
@@ -140,14 +139,16 @@ sub verify_availability {
                         if ($body !~ $check) {
                             signal_error(
                                 'critical',
-"HTTP body of $clean_url ($ip) does not match regexp $input"
+"HTTP body of $clean_url ($ip) does not match regexp $input",
+                                'http.' . $url . '.body'
                             );
                         }
                     } else {
                         if (!$check->($body)) {
                             signal_error(
                                 'critical',
-"HTTP body of $clean_url ($ip) does not match code $input"
+"HTTP body of $clean_url ($ip) does not match code $input",
+                                'http.' . $url . '.body'
                             );
                         }
                     }
@@ -164,7 +165,8 @@ sub resolved {
     if (@_ == 0) {
         signal_error(
             'critical',
-            "Cannot resolve $family DNS record for $hostname"
+            "Cannot resolve $family DNS record for $hostname",
+	    'http.' . $url . '.dns'
         );
         return;
     }

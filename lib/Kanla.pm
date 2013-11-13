@@ -165,6 +165,32 @@ sub start_plugin {
         });
 }
 
+sub message_silenced {
+    my ($message, $counts) = @_;
+
+    my $pattern = $message->{silenced_by};
+    if (!defined($pattern) &&
+        $conf->exists('silenced_by')) {
+        $pattern = $conf->value('silenced_by');
+    }
+
+    return unless defined($pattern);
+
+    my @matches;
+    my @ids = grep { $_ ne $message->{failure_id} } keys %$counts;
+    if (my ($re) = ($pattern =~ m,^/(.*)/$,)) {
+        # Regular expression matching
+        my $compiled = qr/$re/;
+        @matches = grep { /$compiled/ } @ids;
+    } else {
+        # String prefix matching
+        my $prefix = quotemeta($pattern);
+        @matches = grep { m,^$prefix, } @ids;
+    }
+
+    return @matches > 0;
+}
+
 sub xmpp_empty_queue {
     my @leftover;
 
@@ -182,6 +208,8 @@ sub xmpp_empty_queue {
 
     for my $entry (@queued_messages) {
         my ($jid, $message) = @$entry;
+
+        next if message_silenced($message, \%counts);
 
         if ($counts{ $message->{failure_id} } < $consecutive_failures) {
             push @leftover, $entry unless $message->{expiration} < time();
@@ -232,13 +260,18 @@ sub handle_stderr_msg {
     if ($module_config->exists('interval')) {
         $interval = $module_config->value('interval');
     }
+    my $silenced_by = undef;
+    if ($module_config->exists('silenced_by')) {
+        $silenced_by = $module_config->value('silenced_by');
+    }
 
     if ($data->{severity} eq 'critical') {
-        say "relaying: " . $data->{message};
+        say "read from plugin: " . $data->{message};
         my $message = {
-            body       => $data->{message},
-            expiration => time() + $interval,
-            failure_id => $data->{id} // $data->{message},
+            body        => $data->{message},
+            expiration  => time() + $interval,
+            failure_id  => $data->{id} // $data->{message},
+            silenced_by => $silenced_by,
         };
 
         for my $jid (@$dest) {

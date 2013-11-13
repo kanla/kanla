@@ -307,6 +307,54 @@ consecutive_failures = 2
 </monitor>
 --------------------------------------------------------------------------------
 
+==== silenced_by
+
+[[silenced_by]]
+
+The +silenced_by+ directive
+has two use cases:
+
+. Inhibit all alerts when the internet connection is down.
+. Only send a single alert when an entire machine fails.
+
+The first use case can be accomplished
+by monitoring a very reliable target
+and using a global +silenced_by+ setting
+on that target’s id:
+
+*silenced_by example 1*:
+--------------------------------------------------------------------------------
+consecutive_failures = 2
+silenced_by = http.http://www.google.com
+
+<monitor i3wm website>
+    plugin = http
+    url    = http://www.i3wm.org/
+</monitor>
+
+<monitor internet connection check>
+    plugin = http
+    url    = http://www.google.com
+</monitor>
+--------------------------------------------------------------------------------
+
+[NOTE]
+================================================================================
+To avoid race conditions,
+it is a good idea to use
++consecutive_failures = 2+
+and have +interval+ settings
+that ensure the reliable site is
+checked at least as often as the
+other targets.
+Otherwise,
+the +silenced_by+ setting
+might not have any effect,
+because the error for the reliable site
+might arrive *after*
+the error for the unreliable site.
+================================================================================
+
 === Plugin configuration
 
 There are some configuration directives which are valid for every plugin.
@@ -328,6 +376,10 @@ interval::
     that is, plugins don’t *have to* use it
     (e.g. in case the plugin needs a more detailed interval configuration),
     but it is strongly recommended.
+silenced_by::
+    All plugin output is discarded
+    while the specified id is present.
+    See <<silenced_by>>.
 
 === Plugin: http
 
@@ -848,7 +900,7 @@ unless the problem persists.
 Should start with
 the plugin name,
 e.g.
-http.404.http://i3wm.org/
+http.http://i3wm.org/.404
 
 
 *Example alert JSON output*:
