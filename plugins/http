@@ -127,7 +127,7 @@ sub verify_availability {
                 signal_error(
                     'critical',
                     'HTTP reply ' . $hdr->{Status} . " for $clean_url ($ip)",
-                    'http.' . $url . '.' . $hdr->{Status});
+                    [ 'http', $url, $ip, $hdr->{Status} ]);
                 return;
             }
 
@@ -140,16 +140,14 @@ sub verify_availability {
                             signal_error(
                                 'critical',
 "HTTP body of $clean_url ($ip) does not match regexp $input",
-                                'http.' . $url . '.body'
-                            );
+                                [ 'http', $url, $ip, 'body' ]);
                         }
                     } else {
                         if (!$check->($body)) {
                             signal_error(
                                 'critical',
 "HTTP body of $clean_url ($ip) does not match code $input",
-                                'http.' . $url . '.body'
-                            );
+                                [ 'http', $url, $ip, 'body' ]);
                         }
                     }
                 }
@@ -166,8 +164,7 @@ sub resolved {
         signal_error(
             'critical',
             "Cannot resolve $family DNS record for $hostname",
-	    'http.' . $url . '.dns'
-        );
+            [ 'http', $url, 'dns' ]);
         return;
     }
     for my $ip (@_) {
