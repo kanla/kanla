@@ -55,8 +55,8 @@ sub signal_error {
         message  => $message
     };
 
-    if (defined($id) && $id ne '') {
-        $json->{id} = $id;
+    if (defined($id) && ref $id eq 'ARRAY') {
+        $json->{id} = join('.', @$id);
     }
 
     say $errorfh encode_json($json);
