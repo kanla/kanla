@@ -15,17 +15,24 @@ use POSIX qw(setsid);
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
+# Disable buffering,
+# otherwise stdout and stderr
+# are interleaved
+# e.g. in journald.
+$| = 1;
+
 my $configfile;
 GetOptions(
     'configfile=s' => \$configfile,
-    'help' => sub {
+    'help'         => sub {
         pod2usage({
-            -verbose => 1,
-            -exitval => 0,
-        })
+                -verbose => 1,
+                -exitval => 0,
+        });
     },
     'version' => sub {
-        say "kanla $Kanla::VERSION © 2012-2013 Michael Stapelberg and contributors";
+        say
+"kanla $Kanla::VERSION © 2012-2013 Michael Stapelberg and contributors";
         exit 0;
     },
 );
@@ -36,9 +43,7 @@ GetOptions(
 # by using kill -$(pidof kanla)
 setsid();
 
-Kanla::run(
-    configfile => $configfile
-);
+Kanla::run(configfile => $configfile);
 
 # Run forever.
 AnyEvent->condvar->recv;
