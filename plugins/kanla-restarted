@@ -1,0 +1,37 @@
+#!/usr/bin/env perl
+# -*- Mode: CPerl;
+# cperl-indent-level: 4;
+# cperl-continued-statement-offset: 4;
+# cperl-indent-parens-as-block: t;
+# cperl-tabs-always-indent: t;
+# cperl-indent-subs-specially: nil;
+# -*-
+# vim:ts=4:sw=4:expandtab
+
+# To make development easier.
+use lib qw(lib);
+
+use Kanla::Plugin;
+
+my $first = 1;
+my $unit_file =
+    ($conf->exists('unit_file') ? $conf->value('unit_file') : 'kanla.service');
+
+sub run {
+    return unless $first;
+    $first = 0;
+
+    # Check whether kanla was _re_started or started.
+    my $inactive_enter_timestamp =
+        qx(systemctl show -p InactiveEnterTimestampMonotonic $unit_file);
+    return unless defined($inactive_enter_timestamp);
+    chomp($inactive_enter_timestamp);
+
+    return if $inactive_enter_timestamp eq 'InactiveEnterTimestampMonotonic=0';
+
+    signal_error(
+        'critical',
+        'kanla was restarted by systemd; this typically means it crashed.',
+        [ 'kanla-restarted', $$ ],
+    );
+}
