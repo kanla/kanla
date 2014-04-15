@@ -22,6 +22,7 @@ use AnyEvent::DNS;
 
 # core
 use MIME::Base64;
+use Socket qw(SOCK_STREAM);
 
 # The regexes are ripped out of AnyEvent::HTTP.
 # They were modified to extract username and password.
@@ -167,8 +168,10 @@ sub resolved {
             [ 'http', $url, 'dns' ]);
         return;
     }
-    for my $ip (@_) {
-        verify_availability($ip, $url);
+    for my $record (@_) {
+        my ($service, $host) =
+            AnyEvent::Socket::unpack_sockaddr($record->[3]);
+        verify_availability(format_address($host), $url);
     }
 }
 
@@ -184,11 +187,14 @@ sub run {
         # on our own and specifically connect to the resolved IP address.
         my ($host) = parse_url($url);
         if ($conf->obj('family')->value('ipv4')) {
-            AnyEvent::DNS::a $host, sub { resolved('A', $host, $url, @_) };
+            AnyEvent::Socket::resolve_sockaddr(
+                $host, "http", "tcp", 4, SOCK_STREAM,
+                sub { resolved('A', $host, $url, @_) });
         }
         if ($conf->obj('family')->value('ipv6')) {
-            AnyEvent::DNS::aaaa $host,
-                sub { resolved('AAAA', $host, $url, @_) };
+            AnyEvent::Socket::resolve_sockaddr(
+                $host, "http", "tcp", 6, SOCK_STREAM,
+                sub { resolved('AAAA', $host, $url, @_) });
         }
     }
 }
