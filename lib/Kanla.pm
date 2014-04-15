@@ -47,6 +47,7 @@ use Cwd qw(abs_path);
 use Carp;
 use Data::Dumper;
 use File::Basename qw(basename);
+use Encode qw(encode decode);
 
 # see http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 our $VERSION = "1.4";
@@ -98,8 +99,11 @@ sub start_plugin {
 
     # Save the config for this plugin to string,
     # we will feed it to the plugin via stdin below.
-    my $config     = $conf->obj('monitor')->obj($name);
-    my $config_str = $config->save_string();
+    my $config = $conf->obj('monitor')->obj($name);
+    # We need to specifically encode the config string
+    # because AnyEvent does not
+    # specify an encoding.
+    my $config_str = encode('UTF-8', $config->save_string());
 
     my @dest;
     if ($config->exists('send_alerts_to')) {

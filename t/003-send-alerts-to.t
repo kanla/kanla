@@ -5,6 +5,7 @@ use Test::More;
 use File::Temp qw(tempfile);
 use IO::Handle;
 use POSIX qw(setsid);
+use utf8;
 
 # libtest-mockmodule-perl
 use Test::MockModule;
@@ -183,6 +184,33 @@ test_send_alerts_to(
         'testJID@example.com',
         'test2@example.com',
         'amended@example.com',
+    ]);
+
+################################################################################
+# Test with UTF-8 in the config file.
+################################################################################
+
+$config = <<'EOCONF';
+# kanla testcase config file
+<jabber>
+    jid      = "kanla@example.com"
+    password = "kV9eJ4LZ9KRYOCec5W2witq"
+</jabber>
+
+send_alerts_to = <<EOT
+test-JID@example.com
+EOT
+
+<monitor always fail>
+    plugin = fail
+    body = "/—/"
+</monitor>
+EOCONF
+
+test_send_alerts_to(
+    $config,
+    [
+        'test-JID@example.com',
     ]);
 
 done_testing;
