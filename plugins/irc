@@ -39,15 +39,15 @@ sub run {
             cb              => sub {
                 my ($handle, $timeout) = @_;
 
-		# To avoid
-		# "nickname already in use"
-		# we generate a sufficiently random nick.
-		# Downside:
-		# This might make kanla health checks
-		# look like IRC spam bots.
-		# Then again,
-		# the network operator(s)
-		# should know about any kanla instances.
+                # To avoid
+                # "nickname already in use"
+                # we generate a sufficiently random nick.
+                # Downside:
+                # This might make kanla health checks
+                # look like IRC spam bots.
+                # Then again,
+                # the network operator(s)
+                # should know about any kanla instances.
                 my $suffix = '';
                 for (1 .. 6) {
                     $suffix .= chr(ord('A') + rand(ord('Z') - ord('A')));
