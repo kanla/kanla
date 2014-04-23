@@ -58,6 +58,11 @@ sub run {
                 @read_line = (
                     line => sub {
                         my ($handle, $line) = @_;
+                        if ($line =~ /^PING :?(.+)/) {
+                            $handle->push_write("PONG $1\r\n");
+                            $handle->push_read(@read_line);
+                            return;
+                        }
                         if ($line !~ /^:[^ ]+ 001 /) {
                             $handle->push_read(@read_line);
                             return;
