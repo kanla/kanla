@@ -50,7 +50,7 @@ use File::Basename qw(basename);
 use Encode qw(encode decode);
 
 # see http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
-our $VERSION = "1.4";
+our $VERSION = "1.5";
 $VERSION = eval $VERSION;
 
 binmode STDOUT, ':utf8';
@@ -598,7 +598,7 @@ the POD documentation is intentionally sparse.
 
 =head1 VERSION
 
-Version 1.4
+Version 1.5
 
 =head1 AUTHOR
 

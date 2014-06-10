@@ -1,5 +1,16 @@
 Revision history for kanla:
 
+1.5     Tue, 10 Jun 2014 20:13:37 +0200
+        - actually read “interval” from config file
+        - implement consecutive_failures option
+        - implement silenced_by option
+        - disable output buffering for better debugging
+        - add “kanla-restarted” plugin to notify you when kanla crashed.
+        - add and install kanla.service
+        - http: use resolve_sockaddr so that “localhost” can come from /etc/hosts
+        - properly encode UTF-8 in config parts that get passed to plugins
+        - irc: react to ping messages
+
 1.4     Fri, 25 Oct 2013 17:49:59 +0200
         - make Kanla::Plugin work reliably with newer Perl versions
 	- add redis plugin
