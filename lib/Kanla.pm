@@ -204,6 +204,8 @@ sub xmpp_empty_queue {
             0
     );
 
+    @queued_messages = grep { $_->{expiration} >= time() } @queued_messages;
+
     my %counts;
     for my $entry (@queued_messages) {
         my ($jid, $message) = @$entry;
@@ -216,7 +218,7 @@ sub xmpp_empty_queue {
         next if message_silenced($message, \%counts);
 
         if ($counts{ $message->{failure_id} } < $consecutive_failures) {
-            push @leftover, $entry unless $message->{expiration} < time();
+            push @leftover, $entry;
             next;
         }
 
