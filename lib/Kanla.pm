@@ -204,7 +204,7 @@ sub xmpp_empty_queue {
             0
     );
 
-    @queued_messages = grep { $_->{expiration} >= time() } @queued_messages;
+    @queued_messages = grep { my ($jid, $message) = @$_; $message->{expiration} >= time() } @queued_messages;
 
     my %counts;
     for my $entry (@queued_messages) {
