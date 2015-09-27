@@ -19,10 +19,12 @@ use AnyEvent::HTTP;
 use AnyEvent;
 use AnyEvent::Socket;
 use AnyEvent::DNS;
+use AnyEvent::Util::idn_to_ascii;
 
 # core
 use MIME::Base64;
 use Socket qw(SOCK_STREAM);
+use Encode qw(decode);
 
 # The regexes are ripped out of AnyEvent::HTTP.
 # They were modified to extract username and password.
@@ -31,6 +33,8 @@ use Socket qw(SOCK_STREAM);
 # a clean version of the given URL for errror reports and logging.
 sub parse_url {
     my ($url) = @_;
+    # DNS resolving, regexes and displaying the url to the user need decoded strings
+    $url = decode('UTF-8', $url);
 
     my ($uscheme, $uauthority, $upath, $query, $fragment) = $url =~ m|^
             ([^:]+):       # scheme
@@ -52,9 +56,12 @@ sub parse_url {
 
     my $clean_url =
         $uscheme . '://' . $hostname . $port . $upath . $query . $fragment;
+    # AnyEvent::HTTP doesn't to idna encoding when needed (AnyEvent:DNS does, though), so it needs to be done here
+    my $idna_encoded_url =
+        $uscheme . '://' . idn_to_ascii($hostname) . $port . $upath . $query . $fragment;
 
     # TODO: error out in a way which the main process understands
-    return ($hostname, $user_pass, $clean_url);
+    return ($hostname, $user_pass, $clean_url, $idna_encoded_url);
 }
 
 my @urls;
@@ -94,12 +101,12 @@ $timeout ||= 1;
 
 sub verify_availability {
     my ($ip, $url) = @_;
-    my (undef, $user_pass, $clean_url) = parse_url($url);
+    my (undef, $user_pass, $clean_url, $idna_encoded_url) = parse_url($url);
 
     $user_pass = 'Basic ' . encode_base64($user_pass) if defined($user_pass);
 
     http_get(
-        $clean_url,
+        $idna_encoded_url,
         # This timeout is for each individual stage,
         # e.g. for connecting,
         # for waiting for a response,
