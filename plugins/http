@@ -19,7 +19,7 @@ use AnyEvent::HTTP;
 use AnyEvent;
 use AnyEvent::Socket;
 use AnyEvent::DNS;
-use AnyEvent::Util::idn_to_ascii;
+use AnyEvent::Util qw(idn_to_ascii);
 
 # core
 use MIME::Base64;
