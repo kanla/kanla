@@ -204,7 +204,9 @@ sub xmpp_empty_queue {
             0
     );
 
-    @queued_messages = grep { my ($jid, $message) = @$_; $message->{expiration} >= time() } @queued_messages;
+    @queued_messages =
+        grep { my ($jid, $message) = @$_; $message->{expiration} >= time() }
+        @queued_messages;
 
     my %counts;
     for my $entry (@queued_messages) {
@@ -271,12 +273,18 @@ sub handle_stderr_msg {
         $silenced_by = $module_config->value('silenced_by');
     }
 
+    my $consecutive_failures = (
+        $conf->exists('consecutive_failures') ?
+            $conf->value('consecutive_failures') :
+            0
+    );
+
     if ($data->{severity} eq 'critical') {
         say "read from plugin: " . $data->{message};
         my $message = {
-            body        => $data->{message},
-            expiration  => time() + $interval,
-            failure_id  => $data->{id} // $data->{message},
+            body       => $data->{message},
+            expiration => time() + ($interval * ($consecutive_failures + 1)),
+            failure_id => $data->{id} // $data->{message},
             silenced_by => $silenced_by,
         };
 
