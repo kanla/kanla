@@ -132,10 +132,19 @@ sub verify_availability {
             # HTTP 4xx is Client Errors,
             # HTTP 5xx is Server Errors.
             if ($hdr->{Status} =~ /^[4-5]/) {
-                signal_error(
-                    'critical',
-                    'HTTP reply ' . $hdr->{Status} . " for $clean_url ($ip)",
-                    [ 'http', $url, $ip, $hdr->{Status} ]);
+                # Status codes 590-599 are reserved by AnyEvent::HTTP
+                # for internal errors
+                if ($hdr->{Status} =~ /^59/) {
+                    signal_error(
+                        'critical',
+                        "Error while connecting to $clean_url ($ip): " . $hdr->{Reason},
+                        [ 'http', $url, $ip, $hdr->{Status} ]);
+                } else {
+                    signal_error(
+                        'critical',
+                        'HTTP reply ' . $hdr->{Status} . " for $clean_url ($ip)",
+                        [ 'http', $url, $ip, $hdr->{Status} ]);
+                }
                 return;
             }
 

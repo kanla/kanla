@@ -175,14 +175,17 @@ my $check_ipv4_unauthorized = {
 };
 my $check_ipv4_fail = {
     'severity' => 'critical',
-    'message' =>
-        re(qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(127.0.0.1\)#),
+    'message'  => re(
+qr#^Error while connecting to http://localhost:[0-9]+ \(127.0.0.1\): (Connection refused|Connection timed out|Broken pipe)#
+    ),
     'id' => ignore(),
 };
 my $check_ipv6_fail = {
     'severity' => 'critical',
-    'message'  => re(qr#^HTTP reply 59\d for http://localhost:[0-9]+ \(::1\)#),
-    'id'       => ignore(),
+    'message'  => re(
+qr#^Error while connecting to http://localhost:[0-9]+ \(::1\): (Connection refused|Connection timed out|Broken pipe)#
+    ),
+    'id' => ignore(),
 };
 
 ################################################################################

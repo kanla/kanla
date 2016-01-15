@@ -86,7 +86,7 @@ my $fail_msg = {
 };
 
 my $http_msg = {
-    'body' => re(qr#^HTTP reply#),
+    'body' => re(qr#^(HTTP reply|Error while connecting to)#),
 };
 
 my $config = <<'EOCONF';
